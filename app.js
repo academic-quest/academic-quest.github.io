@@ -125,9 +125,11 @@ if (!window.FIREBASE_CONFIG || !window.FIREBASE_CONFIG.apiKey) {
 
     // Render journey
     renderJourney(u.year || "Freshman");
-
-    // Render leaderboard
+    
     renderLeaderboard();
+    
+    renderDonut(u.breakdown || {});
+
 
 // =============================
 // 📋 Render Quests (Dashboard + Quests page)
@@ -160,9 +162,6 @@ async function renderQuests() {
   });
 
     renderQuests();
-    // Render donut chart (live updates)
-    renderDonut(u.breakdown || {});
-
   
     // 🔥 Render full Profile page
     document.getElementById("pfName").innerText = u.name || "—";
