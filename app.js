@@ -1,11 +1,13 @@
 if (!window.FIREBASE_CONFIG || !window.FIREBASE_CONFIG.apiKey) {
-  alert("Firebase not configured. Edit config.js");
+  alert("⚠️ Firebase not configured. Edit config.js");
 } else {
   firebase.initializeApp(window.FIREBASE_CONFIG);
   const auth = firebase.auth();
   const db = firebase.firestore();
 
-  // Auto-create admin
+  // =============================
+  // 🔑 Default Admin Auto-Create
+  // =============================
   async function ensureAdmin() {
     try {
       const methods = await auth.fetchSignInMethodsForEmail("admin@admin.com");
@@ -20,105 +22,189 @@ if (!window.FIREBASE_CONFIG || !window.FIREBASE_CONFIG.apiKey) {
           points: 0,
           badges: [],
           quests: [],
-          activity: [{ msg: "Default admin created", ts: firebase.firestore.FieldValue.serverTimestamp() }]
+          activity: [
+            { msg: "Default admin created", ts: firebase.firestore.FieldValue.serverTimestamp() }
+          ]
         });
+        console.log("✅ Default admin created");
       }
-    } catch (e) { console.log("Admin check error", e.message); }
+    } catch (e) {
+      console.log("Admin ensure error:", e.message);
+    }
   }
   ensureAdmin();
 
-  // Signup
-  async function signup() {
+  // =============================
+  // 🟢 Sign Up
+  // =============================
+  document.getElementById("signupForm").addEventListener("submit", async e => {
+    e.preventDefault();
     const name = document.getElementById("suName").value;
     const studentId = document.getElementById("suStudentId").value;
     const email = document.getElementById("suEmail").value;
     const pass = document.getElementById("suPass").value;
+    const pass2 = document.getElementById("suPass2").value;
     const year = document.getElementById("suYear").value;
+    const courses = document.getElementById("suCourses").value.split(",").map(c => c.trim());
+
+    if (pass !== pass2) {
+      alert("Passwords do not match.");
+      return;
+    }
+
     try {
       const cred = await auth.createUserWithEmailAndPassword(email, pass);
       await db.collection("users").doc(cred.user.uid).set({
-        name, studentId, email, year, role: "student", points: 0, badges: [],
-        quests: [], activity: [{ msg: "Account created", ts: firebase.firestore.FieldValue.serverTimestamp() }]
+        name,
+        studentId,
+        email,
+        year,
+        role: "student",
+        points: 0,
+        badges: [],
+        courses,
+        quests: [],
+        activity: [
+          { msg: "Account created", ts: firebase.firestore.FieldValue.serverTimestamp() }
+        ]
       });
-      alert("Account created.");
-    } catch (err) { alert("Signup error: " + err.message); }
-  }
+      alert("✅ Account created. Please login.");
+    } catch (err) {
+      alert("Signup error: " + err.message);
+    }
+  });
 
-  // Login
-  async function login() {
+  // =============================
+  // 🔵 Login
+  // =============================
+  document.getElementById("loginForm").addEventListener("submit", async e => {
+    e.preventDefault();
     const email = document.getElementById("loginEmail").value;
     const pass = document.getElementById("loginPass").value;
     try {
-      const cred = await auth.signInWithEmailAndPassword(email, pass);
-      const doc = await db.collection("users").doc(cred.user.uid).get();
+      await auth.signInWithEmailAndPassword(email, pass);
+    } catch (err) {
+      alert("Login error: " + err.message);
+    }
+  });
+
+  // =============================
+  // 🔴 Logout
+  // =============================
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    auth.signOut().then(() => location.reload());
+  });
+
+  // =============================
+  // 👤 Auth State Change
+  // =============================
+  auth.onAuthStateChanged(async user => {
+    if (user) {
+      document.getElementById("auth-section").classList.add("hidden");
+      document.getElementById("tab-dashboard").classList.remove("hidden");
+
+      const doc = await db.collection("users").doc(user.uid).get();
       if (doc.exists) {
-        document.getElementById("auth").classList.add("hidden");
-        document.getElementById("app").classList.remove("hidden");
-        renderJourney();
+        const u = doc.data();
+
+        // Show admin tab if role is admin
+        if (u.role === "admin") {
+          document.getElementById("admin-tab").style.display = "inline";
+        }
+
+        // Render profile info
+        document.getElementById("infoName").innerText = u.name || "—";
+        document.getElementById("infoId").innerText = u.studentId || "—";
+
+        // Render journey
+        renderJourney(u.year || "Freshman");
+
+        // Render leaderboard
         renderLeaderboard();
-        if (doc.data().role === "admin") document.getElementById("admin-tab").style.display = "inline";
       }
-    } catch (err) { alert("Login error: " + err.message); }
-  }
+    } else {
+      // Not logged in
+      document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
+      document.getElementById("auth-section").classList.remove("hidden");
+    }
+  });
 
-  function logout() { auth.signOut().then(() => location.reload()); }
+  // =============================
+  // 📌 Navigation Tabs
+  // =============================
+  document.querySelectorAll("[data-tab]").forEach(link => {
+    link.addEventListener("click", e => {
+      e.preventDefault();
+      const tab = link.getAttribute("data-tab");
 
-  async function renderJourney() {
-    const doc = await db.collection("users").doc(auth.currentUser.uid).get();
-    if (!doc.exists) return;
-    const year = doc.data().year || "Freshman";
+      document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
+      document.getElementById(`tab-${tab}`).classList.remove("hidden");
+    });
+  });
+
+  // =============================
+  // 📊 Academic Journey
+  // =============================
+  function renderJourney(currentYear) {
     const levels = ["Freshman","Second Year","Third Year","Final Year"];
     let html = "";
-    levels.forEach(l => { html += `<div class="step ${l === year ? "active":""}">${l}</div>`; });
+    levels.forEach(l => {
+      html += `<span class="step ${l === currentYear ? "active":""}">${l}</span>`;
+    });
     document.getElementById("journey").innerHTML = html;
-    document.getElementById("journeyLevel").innerText = "Current Year: " + year;
+    document.getElementById("journeyLevel").innerText = "Current Year: " + currentYear;
   }
 
+  // =============================
+  // 🏆 Leaderboard
+  // =============================
   async function renderLeaderboard() {
     const snap = await db.collection("users").orderBy("points","desc").get();
-    let rows = "", i = 1;
+    let rows = "", i = 1, top5 = "";
     snap.forEach(doc => {
       const d = doc.data();
-      rows += `<tr><td>${i++}</td><td>${d.name}</td><td>${d.year}</td><td>${d.points}</td></tr>`;
+      rows += `<tr><td>${i}</td><td>${d.name || d.email}</td><td>${d.year || ""}</td><td>${d.points || 0}</td></tr>`;
+      if (i <= 5) {
+        top5 += `<li>${d.name || d.email} - ${d.points || 0} pts</li>`;
+      }
+      i++;
     });
     document.getElementById("lbTable").innerHTML = rows;
-    let top = ""; let rank=1;
-    snap.forEach(doc => { if(rank<=5){ top+=`<li>${doc.data().name} - ${doc.data().points} pts</li>`; rank++; }});
-    document.getElementById("top5").innerHTML = top;
+    document.getElementById("top5").innerHTML = top5;
   }
 
-  async function addQuest() {
+  // =============================
+  // ➕ Admin: Quests & Badges
+  // =============================
+  window.addQuest = async function() {
     const title = document.getElementById("adminQuestTitle").value;
-    const pts = parseInt(document.getElementById("adminQuestPts").value)||0;
-    await db.collection("quests").add({ title, pts, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-    alert("Quest added");
-  }
+    const pts = parseInt(document.getElementById("adminQuestPts").value) || 0;
+    await db.collection("quests").add({
+      title,
+      pts,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    alert("Quest added ✅");
+  };
 
-  async function addBadge() {
+  window.addBadge = async function() {
     const id = document.getElementById("adminBadgeId").value;
     const label = document.getElementById("adminBadgeLabel").value;
-    await db.collection("badges").doc(id).set({ id, label, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-    alert("Badge added");
-  }
+    await db.collection("badges").doc(id).set({
+      id,
+      label,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    alert("Badge added ✅");
+  };
 
-  window.signup = signup;
-  window.login = login;
-  window.logout = logout;
+  // =============================
+  // ✏️ Profile Update (Year only for now)
+  // =============================
   window.updateYear = async function() {
     const year = document.getElementById("editYear").value;
     await db.collection("users").doc(auth.currentUser.uid).update({ year });
-    renderJourney();
+    renderJourney(year);
+    alert("Academic year updated to " + year);
   };
-  window.addQuest = addQuest;
-  window.addBadge = addBadge;
-
-  document.getElementById("logoutBtn").onclick = logout;
-  $$(".nav a").forEach(link=>{
-    link.onclick = (e)=>{e.preventDefault();showTab(link.dataset.tab);}
-  });
-
-  function showTab(tab){
-    $$("#app .page").forEach(p=>p.classList.add("hidden"));
-    document.getElementById("tab-"+tab).classList.remove("hidden");
-  }
 }
