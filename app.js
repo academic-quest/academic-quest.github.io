@@ -158,11 +158,12 @@ async function renderQuests() {
     `;
     grid.appendChild(card);
   });
-  
+
+    renderQuests();
     // Render donut chart (live updates)
     renderDonut(u.breakdown || {});
 
-    renderQuests();  
+  
     // 🔥 Render full Profile page
     document.getElementById("pfName").innerText = u.name || "—";
     document.getElementById("pfId").innerText = u.studentId || "—";
