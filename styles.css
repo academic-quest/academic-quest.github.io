@@ -5,6 +5,31 @@ body {
   background: url("img/grid.jpg") repeat;
   background-size: auto;
 }
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #2d4dcf;
+  color: #fff;
+  padding: 10px 20px;
+}
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo {
+  font-weight: bold;
+}
+.brand {
+  font-size: 18px;
+  font-weight: 600;
+}
+.nav-right a {
+  color: white;
+  margin-left: 20px;
+  text-decoration: none;
+}
 
 .hidden { display: none; }
 .nav { display: flex; justify-content: space-between; padding: 10px; background: #1e40af; color: #fff; }
@@ -20,3 +45,4 @@ body {
 .journey .step { display: inline-block; padding: 10px; margin: 5px; border: 1px solid #ccc; border-radius: 8px; }
 .journey .active { background: #1e40af; color: #fff; }
 .site-footer { padding: 10px; background: #f1f1f1; text-align: center; }
+
