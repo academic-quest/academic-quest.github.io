@@ -8,30 +8,37 @@ if (!window.FIREBASE_CONFIG || !window.FIREBASE_CONFIG.apiKey) {
   // =============================
   // 🔑 Default Admin Auto-Create
   // =============================
-  async function ensureAdmin() {
-    try {
-      const methods = await auth.fetchSignInMethodsForEmail("admin@admin.com");
-      if (methods.length === 0) {
-        const cred = await auth.createUserWithEmailAndPassword("admin@admin.com", "123456");
-        await db.collection("users").doc(cred.user.uid).set({
-          name: "Administrator",
-          studentId: "ADMIN",
-          email: "admin@admin.com",
-          year: "Admin",
-          role: "admin",
-          points: 0,
-          badges: [],
-          quests: [],
-          activity: [
-            { msg: "Default admin created", ts: firebase.firestore.FieldValue.serverTimestamp() }
-          ]
-        });
-        console.log("✅ Default admin created");
-      }
-    } catch (e) {
-      console.log("Admin ensure error:", e.message);
+ async function ensureAdmin() {
+  try {
+    const methods = await auth.fetchSignInMethodsForEmail("admin@admin.com");
+    if (methods.length === 0) {
+      // use a secondary app so we don't switch the current session
+      const secondary = firebase.initializeApp(window.FIREBASE_CONFIG, "secondary");
+      const sAuth = secondary.auth();
+
+      const cred = await sAuth.createUserWithEmailAndPassword("admin@admin.com", "123456");
+      await db.collection("users").doc(cred.user.uid).set({
+        name: "Administrator",
+        studentId: "ADMIN",
+        email: "admin@admin.com",
+        year: "Admin",
+        role: "admin",
+        points: 0,
+        badges: [],
+        quests: [],
+        activity: [
+          { msg: "Default admin created", ts: firebase.firestore.FieldValue.serverTimestamp() }
+        ]
+      });
+
+      await sAuth.signOut();
+      await secondary.delete();
+      console.log("✅ Default admin created (secondary app, session preserved)");
     }
+  } catch (e) {
+    console.log("Admin ensure error:", e.message);
   }
+}
   ensureAdmin();
 
   // =============================
@@ -122,8 +129,56 @@ if (!window.FIREBASE_CONFIG || !window.FIREBASE_CONFIG.apiKey) {
     // Render leaderboard
     renderLeaderboard();
 
+// =============================
+// 📋 Render Quests (Dashboard + Quests page)
+// =============================
+async function renderQuests() {
+  const snap = await db.collection("quests").orderBy("createdAt", "desc").get();
+
+  // Dashboard "Current Quests" (ul#currentQuests)
+  const ul = document.getElementById("currentQuests");
+  ul.innerHTML = "";
+  snap.forEach(doc => {
+    const q = doc.data();
+    const li = document.createElement("li");
+    li.textContent = `${q.title} (+${q.pts})`;
+    ul.appendChild(li);
+  });
+
+  // Quests page (div#questGrid)
+  const grid = document.getElementById("questGrid");
+  grid.innerHTML = "";
+  snap.forEach(doc => {
+    const q = doc.data();
+    const card = document.createElement("div");
+    card.className = "quest-card";
+    card.innerHTML = `
+      <div class="q-title">${q.title}</div>
+      <div class="q-pts">+${q.pts} pts</div>
+    `;
+    grid.appendChild(card);
+  });
+  
     // Render donut chart (live updates)
     renderDonut(u.breakdown || {});
+
+    renderQuests();  
+    // 🔥 Render full Profile page
+    document.getElementById("pfName").innerText = u.name || "—";
+    document.getElementById("pfId").innerText = u.studentId || "—";
+    document.getElementById("pfYear").innerText = u.year || "—";
+    document.getElementById("pfCourses").innerText = (u.courses || []).join(", ");
+    document.getElementById("pfPoints").innerText = u.points || 0;
+    document.getElementById("pfBadges").innerHTML = (u.badges || [])
+      .map(b => `<span class="badge">${b}</span>`).join(" ");
+    document.getElementById("activityLog").innerHTML = (u.activity || [])
+      .map(a => `<li>${a.msg}</li>`).join("");      
+
+    // ✍️ Prefill edit form
+    document.getElementById("editName").value = u.name || "";
+    document.getElementById("editId").value = u.studentId || "";
+    document.getElementById("editCourses").value = (u.courses || []).join(", ");
+    document.getElementById("editYear").value = u.year || "Freshman";            
   }
 });
     } else {
@@ -145,6 +200,18 @@ if (!window.FIREBASE_CONFIG || !window.FIREBASE_CONFIG.apiKey) {
       document.getElementById(`tab-${tab}`).classList.remove("hidden");
     });
   });
+// =============================
+// 🛠️ Admin Button Listeners
+// =============================
+const addQuestBtn = document.getElementById("addQuest");
+const addBadgeBtn = document.getElementById("addBadge");
+
+if (addQuestBtn) {
+  addQuestBtn.addEventListener("click", () => window.addQuest());
+}
+if (addBadgeBtn) {
+  addBadgeBtn.addEventListener("click", () => window.addBadge());
+}
 
   // =============================
   // 📊 Academic Journey
@@ -181,27 +248,25 @@ if (!window.FIREBASE_CONFIG || !window.FIREBASE_CONFIG.apiKey) {
   // ➕ Admin: Quests & Badges
   // =============================
   window.addQuest = async function() {
-    const title = document.getElementById("adminQuestTitle").value;
-    const pts = parseInt(document.getElementById("adminQuestPts").value) || 0;
-    await db.collection("quests").add({
-      title,
-      pts,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    alert("Quest added ✅");
-  };
-
-  window.addBadge = async function() {
-    const id = document.getElementById("adminBadgeId").value;
-    const label = document.getElementById("adminBadgeLabel").value;
-    await db.collection("badges").doc(id).set({
-      id,
-      label,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    alert("Badge added ✅");
-  };
-
+  const title = document.getElementById("adminQuestTitle").value.trim();
+  const pts = parseInt(document.getElementById("adminQuestPts").value) || 0;
+  if (!title) return alert("Enter a quest title.");
+  await db.collection("quests").add({
+    title, pts, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  alert("Quest added ✅");
+  renderQuests();
+};
+window.addBadge = async function() {
+  const id = document.getElementById("adminBadgeId").value.trim();
+  const label = document.getElementById("adminBadgeLabel").value.trim();
+  if (!id || !label) return alert("Enter badge id and label.");
+  await db.collection("badges").doc(id).set({
+    id, label, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  alert("Badge added ✅");
+  // badges show on profile from user doc; awarding flow can be added later
+};
   // =============================
   // ✏️ Profile Update (Year only for now)
   // =============================
@@ -211,6 +276,33 @@ if (!window.FIREBASE_CONFIG || !window.FIREBASE_CONFIG.apiKey) {
     renderJourney(year);
     alert("Academic year updated to " + year);
   };
+  // =============================
+// 💾 Save Profile (all fields)
+// =============================
+document.getElementById("saveProfile").addEventListener("click", async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const name = document.getElementById("editName").value.trim();
+  const studentId = document.getElementById("editId").value.trim();
+  const courses = document.getElementById("editCourses").value
+    .split(",").map(c => c.trim()).filter(Boolean);
+  const year = document.getElementById("editYear").value;
+
+  await db.collection("users").doc(user.uid).set({
+    name,
+    studentId,
+    courses,
+    year,
+    activity: firebase.firestore.FieldValue.arrayUnion({
+      msg: "Profile updated (name/id/courses/year)",
+      ts: firebase.firestore.FieldValue.serverTimestamp()
+    })
+  }, { merge: true });
+
+  renderJourney(year);
+  alert("Profile saved ✅");
+});
 }
 function renderDonut(breakdown) {
   const canvas = document.getElementById("donut");
