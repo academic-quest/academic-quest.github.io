@@ -103,25 +103,29 @@ if (!window.FIREBASE_CONFIG || !window.FIREBASE_CONFIG.apiKey) {
       document.getElementById("auth-section").classList.add("hidden");
       document.getElementById("tab-dashboard").classList.remove("hidden");
 
-      const doc = await db.collection("users").doc(user.uid).get();
-      if (doc.exists) {
-        const u = doc.data();
+      db.collection("users").doc(user.uid).onSnapshot(doc => {
+        if (doc.exists) {
+          const u = doc.data();
 
-        // Show admin tab if role is admin
-        if (u.role === "admin") {
-          document.getElementById("admin-tab").style.display = "inline";
-        }
+    // Show admin tab if role is admin
+    if (u.role === "admin") {
+      document.getElementById("admin-tab").style.display = "inline";
+    }
 
-        // Render profile info
-        document.getElementById("infoName").innerText = u.name || "—";
-        document.getElementById("infoId").innerText = u.studentId || "—";
+    // Render profile info
+    document.getElementById("infoName").innerText = u.name || "—";
+    document.getElementById("infoId").innerText = u.studentId || "—";
 
-        // Render journey
-        renderJourney(u.year || "Freshman");
+    // Render journey
+    renderJourney(u.year || "Freshman");
 
-        // Render leaderboard
-        renderLeaderboard();
-      }
+    // Render leaderboard
+    renderLeaderboard();
+
+    // Render donut chart (live updates)
+    renderDonut(u.breakdown || {});
+  }
+});
     } else {
       // Not logged in
       document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
@@ -207,4 +211,41 @@ if (!window.FIREBASE_CONFIG || !window.FIREBASE_CONFIG.apiKey) {
     renderJourney(year);
     alert("Academic year updated to " + year);
   };
+}
+function renderDonut(breakdown) {
+  const canvas = document.getElementById("donut");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Default values
+  const data = {
+    assignments: breakdown.assignments || 0,
+    exams: breakdown.exams || 0,
+    attendance: breakdown.attendance || 0,
+    other: breakdown.other || 0
+  };
+
+  const total = Object.values(data).reduce((a, b) => a + b, 0) || 1;
+
+  const colors = ["#2563eb", "#16a34a", "#f59e0b", "#9ca3af"]; // blue, green, orange, gray
+  const values = Object.values(data);
+  let start = 0;
+
+  values.forEach((val, i) => {
+    const slice = (val / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, canvas.height / 2);
+    ctx.arc(canvas.width / 2, canvas.height / 2, 90, start, start + slice);
+    ctx.fillStyle = colors[i];
+    ctx.fill();
+    start += slice;
+  });
+
+  // Hollow center
+  ctx.beginPath();
+  ctx.arc(canvas.width / 2, canvas.height / 2, 50, 0, Math.PI * 2);
+  ctx.fillStyle = "#fff";
+  ctx.fill();
 }
