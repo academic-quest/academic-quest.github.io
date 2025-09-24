@@ -1,0 +1,20 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: url("img/grid.png") repeat;
+  background-size: 40px 40px;
+}
+.hidden { display: none; }
+.nav { display: flex; justify-content: space-between; padding: 10px; background: #1e40af; color: #fff; }
+.nav a, .nav button { color: #fff; margin: 0 10px; text-decoration: none; background: none; border: none; cursor: pointer; }
+.auth-wrap { display: flex; justify-content: center; padding: 40px; }
+.auth-card { background: #fff; padding: 20px; border-radius: 10px; width: 300px; }
+.card { background: #fff; padding: 20px; margin: 20px; border-radius: 10px; }
+.dash-grid { display: grid; grid-template-areas: "left center right" "journey journey journey"; grid-template-columns: 200px 1fr 300px; gap: 20px; }
+.profile-panel { grid-area: left; }
+.quests-card { grid-area: center; }
+.right-col { grid-area: right; }
+.journey-card { grid-area: journey; }
+.journey .step { display: inline-block; padding: 10px; margin: 5px; border: 1px solid #ccc; border-radius: 8px; }
+.journey .active { background: #1e40af; color: #fff; }
+.site-footer { padding: 10px; background: #f1f1f1; text-align: center; }
