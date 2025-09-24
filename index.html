@@ -4,144 +4,165 @@
   <meta charset="utf-8">
   <title>ACADEMIC QUEST</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Styles -->
   <link rel="stylesheet" href="styles.css">
+
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+  <!-- Your Firebase config -->
   <script src="config.js"></script>
 </head>
 <body>
   <!-- Navbar -->
-<nav class="navbar">
-  <div class="nav-left">
-    <span class="logo">AQ</span>
-    <span class="brand">ACADEMIC QUEST</span>
-  </div>
-  <div class="nav-right">
-    <a href="#" data-tab="dashboard">Dashboard</a>
-    <a href="#" data-tab="quests">Quests</a>
-    <a href="#" data-tab="leaderboard">Leaderboard</a>
-    <a href="#" data-tab="profile">Profile</a>
-    <a href="#" id="admin-tab" style="display:none;" data-tab="admin">Admin</a>
-    <a href="#" id="logoutBtn">Logout</a>
-  </div>
-</nav>
+  <nav class="navbar">
+    <div class="nav-left">
+      <span class="logo">AQ</span>
+      <span class="brand">ACADEMIC QUEST</span>
+    </div>
+    <div class="nav-right">
+      <a href="#" data-tab="dashboard">Dashboard</a>
+      <a href="#" data-tab="quests">Quests</a>
+      <a href="#" data-tab="leaderboard">Leaderboard</a>
+      <a href="#" data-tab="profile">Profile</a>
+      <a href="#" id="admin-tab" style="display:none;" data-tab="admin">Admin</a>
+      <a href="#" id="logoutBtn">Logout</a>
+    </div>
+  </nav>
+
   <!-- Auth -->
-  <section id="auth" class="auth-wrap">
+  <section id="auth-section" class="page">
     <div class="auth-card">
       <h2>Login</h2>
-      <input id="loginEmail" type="email" placeholder="Email">
-      <input id="loginPass" type="password" placeholder="Password">
-      <button onclick="login()">Login</button>
+      <form id="loginForm">
+        <input id="loginEmail" type="email" placeholder="Email">
+        <input id="loginPass" type="password" placeholder="Password">
+        <button type="submit">Login</button>
+      </form>
       <hr>
       <h2>Sign Up</h2>
-      <input id="suName" placeholder="Full Name">
-      <input id="suStudentId" placeholder="Student ID">
-      <input id="suEmail" type="email" placeholder="Email">
-      <input id="suPass" type="password" placeholder="Password">
-      <label>Year:</label>
-      <select id="suYear">
-        <option>Freshman</option>
-        <option>Second Year</option>
-        <option>Third Year</option>
-        <option>Final Year</option>
-      </select>
-      <button onclick="signup()">Create Account</button>
+      <form id="signupForm">
+        <input id="suName" placeholder="Full Name">
+        <input id="suStudentId" placeholder="Student ID">
+        <input id="suEmail" type="email" placeholder="Email">
+        <input id="suPass" type="password" placeholder="Password">
+        <input id="suPass2" type="password" placeholder="Confirm Password">
+        <label>Year:</label>
+        <select id="suYear">
+          <option>Freshman</option>
+          <option>Second Year</option>
+          <option>Third Year</option>
+          <option>Final Year</option>
+        </select>
+        <input id="suCourses" placeholder="Courses (comma-separated)">
+        <button type="submit">Create Account</button>
+      </form>
     </div>
   </section>
 
   <!-- Dashboard -->
-  <main id="app" class="hidden">
-    <section id="tab-dashboard" class="page">
-      <div class="dash-grid">
-        <aside class="card profile-panel">
-          <div class="avatar"></div>
-          <div class="kv"><span class="k">Group</span><span class="v">Academic Quest</span></div>
-          <div class="kv"><span class="k">User</span><span id="infoName" class="v">—</span></div>
-          <div class="kv"><span class="k">University ID</span><span id="infoId" class="v">—</span></div>
-        </aside>
+  <section id="tab-dashboard" class="page hidden">
+    <div class="dash-grid">
+      <aside class="card profile-panel">
+        <div class="avatar"></div>
+        <div class="kv"><span class="k">Group</span><span class="v">Academic Quest</span></div>
+        <div class="kv"><span class="k">User</span><span id="infoName" class="v">—</span></div>
+        <div class="kv"><span class="k">University ID</span><span id="infoId" class="v">—</span></div>
+      </aside>
 
-        <section class="card quests-card">
-          <h3>Current Quests</h3>
-          <ul id="currentQuests" class="quest-list"></ul>
+      <section class="card quests-card">
+        <h3>Current Quests</h3>
+        <ul id="currentQuests" class="quest-list"></ul>
+      </section>
+
+      <aside class="right-col">
+        <section class="card">
+          <h3>Leaderboard – Top 5</h3>
+          <ol id="top5"></ol>
         </section>
-
-        <aside class="right-col">
-          <section class="card">
-            <h3>Leaderboard – Top 5</h3>
-            <ol id="top5" class="top5"></ol>
-          </section>
-          <section class="card">
-            <h3>Points Breakdown</h3>
-            <canvas id="donut" width="200" height="200"></canvas>
-          </section>
-        </aside>
-
-        <section class="card journey-card">
-          <h3>Academic Journey</h3>
-          <div id="journey" class="journey"></div>
-          <div id="journeyLevel" class="muted"></div>
+        <section class="card">
+          <h3>Points Breakdown</h3>
+          <canvas id="donut" width="200" height="200"></canvas>
         </section>
-      </div>
-    </section>
+      </aside>
+    </div>
 
-    <!-- Quests -->
-    <section id="tab-quests" class="page hidden">
-      <h2>All Quests</h2>
-      <div id="questGrid"></div>
-    </section>
+    <div class="card journey-card">
+      <h3>Academic Journey</h3>
+      <div id="journey"></div>
+      <div id="journeyLevel" class="muted"></div>
+    </div>
+  </section>
 
-    <!-- Leaderboard -->
-    <section id="tab-leaderboard" class="page hidden">
-      <h2>Leaderboard</h2>
-      <table>
-        <thead><tr><th>#</th><th>Name</th><th>Year</th><th>Points</th></tr></thead>
-        <tbody id="lbTable"></tbody>
-      </table>
-    </section>
+  <!-- Quests -->
+  <section id="tab-quests" class="page hidden">
+    <h2>All Quests</h2>
+    <div id="questGrid"></div>
+  </section>
 
-    <!-- Profile -->
-    <section id="tab-profile" class="page hidden">
-      <h2>Profile</h2>
-      <p>Name: <span id="pfName"></span></p>
-      <p>University ID: <span id="pfId"></span></p>
-      <p>Year: <span id="pfYear"></span></p>
-      <label>Edit Year:</label>
-      <select id="editYear" onchange="updateYear()">
-        <option>Freshman</option>
-        <option>Second Year</option>
-        <option>Third Year</option>
-        <option>Final Year</option>
-      </select>
-      <h3>Badges</h3>
-      <div id="pfBadges"></div>
-      <h3>Activity Log</h3>
-      <ul id="activityLog"></ul>
-    </section>
+  <!-- Leaderboard -->
+  <section id="tab-leaderboard" class="page hidden">
+    <h2>Leaderboard</h2>
+    <table>
+      <thead><tr><th>#</th><th>Name</th><th>Year</th><th>Points</th></tr></thead>
+      <tbody id="lbTable"></tbody>
+    </table>
+    <div id="badgeStrip"></div>
+  </section>
 
-    <!-- Admin -->
-    <section id="tab-admin" class="page hidden">
-      <h2>Admin Panel</h2>
+  <!-- Profile -->
+  <section id="tab-profile" class="page hidden">
+    <h2>Profile</h2>
+    <p>Name: <span id="pfName"></span></p>
+    <p>University ID: <span id="pfId"></span></p>
+    <p>Year: <span id="pfYear"></span></p>
+    <p>Courses: <span id="pfCourses"></span></p>
+    <p>Total Points: <span id="pfPoints"></span></p>
+    <h3>Badges</h3>
+    <div id="pfBadges"></div>
+    <h3>Activity Log</h3>
+    <ul id="activityLog"></ul>
+    <h3>Edit Profile</h3>
+    <input id="editName" placeholder="Name">
+    <input id="editId" placeholder="University ID">
+    <input id="editCourses" placeholder="Courses (comma-separated)">
+    <select id="editYear">
+      <option>Freshman</option>
+      <option>Second Year</option>
+      <option>Third Year</option>
+      <option>Final Year</option>
+    </select>
+    <button id="saveProfile">Save</button>
+  </section>
+
+  <!-- Admin -->
+  <section id="tab-admin" class="page hidden">
+    <h2>Admin Panel</h2>
+    <div class="card">
       <h3>Add Quest</h3>
       <input id="adminQuestTitle" placeholder="Quest Title">
       <input id="adminQuestPts" type="number" placeholder="Points">
-      <button onclick="addQuest()">Add Quest</button>
+      <button id="addQuest">Add Quest</button>
+    </div>
+    <div class="card">
       <h3>Add Badge</h3>
       <input id="adminBadgeId" placeholder="Badge ID">
       <input id="adminBadgeLabel" placeholder="Badge Label">
-      <button onclick="addBadge()">Add Badge</button>
-    </section>
-  </main>
+      <button id="addBadge">Add Badge</button>
+    </div>
+  </section>
 
+  <!-- Footer -->
   <footer class="site-footer">
-    <span>Academic Quest © 2025 — Rangsit University</span>
-    <div><a>About</a> · <a>Contact</a> · <a>Support</a></div>
+    Academic Quest © 2025 — Rangsit University
+    <br>
+    <a href="#">About</a> · <a href="#">Contact</a> · <a href="#">Support</a>
   </footer>
 
-  <link rel="stylesheet" href="styles.css">
-  <script src="config.js"></script>
+  <!-- Scripts at the end -->
   <script src="app.js" defer></script>
-
 </body>
 </html>
