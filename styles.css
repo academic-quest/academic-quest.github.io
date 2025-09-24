@@ -1,7 +1,7 @@
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  background: url("img/grid.png") repeat;
+  background: url("img/grid.jpg") repeat;
   background-size: 40px 40px;
 }
 .hidden { display: none; }
