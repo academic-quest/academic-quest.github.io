@@ -115,30 +115,51 @@
     <div id="badgeStrip"></div>
   </section>
 
-  <!-- Profile -->
-  <section id="tab-profile" class="page hidden">
-    <h2>Profile</h2>
-    <p>Name: <span id="pfName"></span></p>
-    <p>University ID: <span id="pfId"></span></p>
-    <p>Year: <span id="pfYear"></span></p>
-    <p>Courses: <span id="pfCourses"></span></p>
-    <p>Total Points: <span id="pfPoints"></span></p>
-    <h3>Badges</h3>
-    <div id="pfBadges"></div>
-    <h3>Activity Log</h3>
-    <ul id="activityLog"></ul>
-    <h3>Edit Profile</h3>
-    <input id="editName" placeholder="Name">
-    <input id="editId" placeholder="University ID">
-    <input id="editCourses" placeholder="Courses (comma-separated)">
-    <select id="editYear">
-      <option>Freshman</option>
-      <option>Second Year</option>
-      <option>Third Year</option>
-      <option>Final Year</option>
-    </select>
-    <button id="saveProfile">Save</button>
-  </section>
+<!-- Profile -->
+<section id="tab-profile" class="page hidden">
+  <div class="profile-grid">
+    
+    <!-- Left column: Info -->
+    <aside class="card">
+      <h3>Info</h3>
+      <p><strong>Name:</strong> <span id="pfName">—</span></p>
+      <p><strong>University ID:</strong> <span id="pfId">—</span></p>
+      <p><strong>Year:</strong> <span id="pfYear">—</span></p>
+      <p><strong>Courses:</strong> <span id="pfCourses">—</span></p>
+      <p><strong>Total Points:</strong> <span id="pfPoints">0</span></p>
+    </aside>
+
+    <!-- Middle column: Details -->
+    <section class="card">
+      <h3>Activity Log</h3>
+      <ul id="activityLog"></ul>
+    </section>
+
+    <!-- Right column: Edit -->
+    <aside class="card">
+      <h3>Edit Profile</h3>
+      <input id="editName" placeholder="Name">
+      <input id="editId" placeholder="University ID">
+      <input id="editCourses" placeholder="Courses (comma-separated)">
+      <select id="editYear">
+        <option>Freshman</option>
+        <option>Second Year</option>
+        <option>Third Year</option>
+        <option>Final Year</option>
+      </select>
+      <button id="saveProfile">Save</button>
+    </aside>
+
+    <!-- Sidebar: Badges + Journey -->
+    <aside class="card sidebar">
+      <h3>Badges</h3>
+      <div id="pfBadges"></div>
+      <h3>Academic Level Progress</h3>
+      <div id="lvlBar"></div>
+    </aside>
+
+  </div>
+</section>
 
   <!-- Admin -->
   <section id="tab-admin" class="page hidden">
