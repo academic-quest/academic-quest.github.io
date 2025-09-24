@@ -1,48 +1,170 @@
-body {
-  font-family: 'Inter', sans-serif;
+/* Reset & Base */
+* {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  background: url("img/grid.jpg") repeat;
-  background-size: auto;
 }
+body {
+  font-family: Arial, sans-serif;
+  background: url("img/grid.jpg") repeat;
+  background-size: 200px 200px;
+  color: #222;
+}
+
+/* Navbar */
 .navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #2d4dcf;
-  color: #fff;
-  padding: 10px 20px;
+  background: #1e3a8a; /* dark blue */
+  padding: 0.75rem 1.5rem;
+  color: white;
 }
 .nav-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
 }
 .logo {
   font-weight: bold;
+  background: white;
+  color: #1e3a8a;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
 }
 .brand {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 1.1rem;
+  font-weight: bold;
+  letter-spacing: 1px;
 }
 .nav-right a {
+  margin-left: 1.25rem;
   color: white;
-  margin-left: 20px;
   text-decoration: none;
+  font-size: 0.95rem;
+}
+.nav-right a:hover {
+  text-decoration: underline;
 }
 
-.hidden { display: none; }
-.nav { display: flex; justify-content: space-between; padding: 10px; background: #1e40af; color: #fff; }
-.nav a, .nav button { color: #fff; margin: 0 10px; text-decoration: none; background: none; border: none; cursor: pointer; }
-.auth-wrap { display: flex; justify-content: center; padding: 40px; }
-.auth-card { background: #fff; padding: 20px; border-radius: 10px; width: 300px; }
-.card { background: #fff; padding: 20px; margin: 20px; border-radius: 10px; }
-.dash-grid { display: grid; grid-template-areas: "left center right" "journey journey journey"; grid-template-columns: 200px 1fr 300px; gap: 20px; }
-.profile-panel { grid-area: left; }
-.quests-card { grid-area: center; }
-.right-col { grid-area: right; }
-.journey-card { grid-area: journey; }
-.journey .step { display: inline-block; padding: 10px; margin: 5px; border: 1px solid #ccc; border-radius: 8px; }
-.journey .active { background: #1e40af; color: #fff; }
-.site-footer { padding: 10px; background: #f1f1f1; text-align: center; }
+/* Auth card */
+#auth-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+}
+.auth-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  width: 320px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+.auth-card h2 {
+  margin-bottom: 0.75rem;
+}
+.auth-card input,
+.auth-card select {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+.auth-card button {
+  width: 100%;
+  padding: 0.6rem;
+  background: #1e3a8a;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.auth-card button:hover {
+  background: #3749b5;
+}
+.auth-card hr {
+  margin: 1.5rem 0;
+}
 
+/* Layout after login */
+.hidden {
+  display: none !important;
+}
+.page {
+  padding: 1.5rem;
+}
+.dash-grid {
+  display: grid;
+  grid-template-columns: 200px 1fr 250px;
+  gap: 1rem;
+}
+
+/* Cards */
+.card {
+  background: white;
+  padding: 1rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.profile-panel .avatar {
+  width: 80px;
+  height: 80px;
+  background: #eee;
+  border-radius: 50%;
+  margin-bottom: 1rem;
+}
+.kv {
+  margin-bottom: 0.5rem;
+}
+.k {
+  font-weight: bold;
+  margin-right: 0.25rem;
+}
+.v {
+  color: #333;
+}
+.quest-list {
+  list-style: none;
+}
+.quest-list li {
+  padding: 0.25rem 0;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+table th, table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+table th {
+  background: #f3f4f6;
+}
+
+/* Footer */
+.site-footer {
+  margin-top: 2rem;
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  background: #f3f4f6;
+  color: #555;
+}
+.site-footer a {
+  color: #1e3a8a;
+  text-decoration: none;
+}
+.site-footer a:hover {
+  text-decoration: underline;
+}
