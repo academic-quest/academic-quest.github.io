@@ -164,6 +164,10 @@ async function loadPage(page) {
         // ... (All your admin panel functions remain the same)
     }
 
+document.addEventListener('DOMContentLoaded', () => {
+
+    // ... (Your existing code)
+
     // Call loadAdminPanel if on the admin page
     if (window.location.pathname.endsWith('admin.html')) {
         loadAdminPanel();
