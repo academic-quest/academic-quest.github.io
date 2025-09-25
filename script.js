@@ -31,28 +31,28 @@ auth.onAuthStateChanged(user => {
 
         const adminLinkContainer = document.getElementById('admin-link-container');
         if (user.email === adminEmail) {
+            // User is the admin
             if (adminLinkContainer) {
                 adminLinkContainer.style.display = 'list-item';
             }
-            if (window.location.pathname.endsWith('admin.html')) {
-                loadAdminPanel();
-            }
         } else {
+            // User is a regular student
             if (adminLinkContainer) {
                 adminLinkContainer.style.display = 'none';
             }
         }
-    } else {
-        // No user is logged in
-        if (!window.location.pathname.endsWith('sign-up.html')) {
-            window.location.href = 'sign-up.html';
+
+        // Call student-specific logic ONLY on the index page
+        if (window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/')) {
+            window.initStudentDashboard(user);
         }
 
-        if (window.location.pathname.endsWith('admin.html')) {
-            window.location.href = 'sign-up.html';
-        }
+    } else {
+        // No user is logged in, redirect to login page
+        window.location.href = 'sign-up.html';
     }
 });
+
 
 // --- Separate DOMContentLoaded for specific page logic ---
 document.addEventListener('DOMContentLoaded', () => {
