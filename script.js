@@ -16,53 +16,43 @@ const db = firebase.firestore();
 
 const adminEmail = "admin@admin.com";
 
-document.addEventListener('DOMContentLoaded', () => {
-    // --- Common Elements for both pages ---
-    const userEmailSpan = document.getElementById('user-email');
-    const adminLinkContainer = document.getElementById('admin-link-container');
-    const mainContent = document.getElementById('content');
+// --- General Auth Listener ---
+auth.onAuthStateChanged(user => {
+    if (user) {
+        // User is logged in
+        if (window.location.pathname.endsWith('sign-up.html')) {
+            window.location.href = 'index.html';
+            return;
+        }
 
-    // --- General Auth Listener ---
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            // User is logged in
-            if (window.location.pathname.endsWith('sign-up.html')) {
-                window.location.href = 'index.html';
-                return; // Stop execution here
-            }
+        const userEmailSpan = document.getElementById('user-email');
+        if (userEmailSpan) {
+            userEmailSpan.textContent = user.email;
+        }
 
-            if (userEmailSpan) {
-                userEmailSpan.textContent = user.email;
-            }
-
-            if (user.email === adminEmail) {
-                // User is the admin
-                if (adminLinkContainer) {
-                    adminLinkContainer.style.display = 'list-item';
-                }
-                if (window.location.pathname.endsWith('admin.html')) {
-                    loadAdminPanel();
-                } else if (mainContent) {
-                    const currentHash = window.location.hash || '#dashboard';
-                    loadPage(currentHash);
-                }
-            } else {
-                // User is a regular student
-                if (adminLinkContainer) {
-                    adminLinkContainer.style.display = 'none';
-                }
-                if (mainContent) {
-                    const currentHash = window.location.hash || '#dashboard';
-                    loadPage(currentHash);
-                }
+        const adminLinkContainer = document.getElementById('admin-link-container');
+        if (user.email === adminEmail) {
+            // User is the admin
+            if (adminLinkContainer) {
+                adminLinkContainer.style.display = 'list-item';
             }
         } else {
-            // No user is logged in
-            if (!window.location.pathname.endsWith('sign-up.html')) {
-                window.location.href = 'sign-up.html';
+            // User is a regular student
+            if (adminLinkContainer) {
+                adminLinkContainer.style.display = 'none';
             }
         }
-    });
+    } else {
+        // No user is logged in
+        if (!window.location.pathname.endsWith('sign-up.html')) {
+            window.location.href = 'sign-up.html';
+        }
+    }
+});
+
+// --- Separate DOMContentLoaded for specific page logic ---
+document.addEventListener('DOMContentLoaded', () => {
+    const mainContent = document.getElementById('content');
 
     // --- Login and Sign-up Page Logic (sign-up.html) ---
     const signupForm = document.getElementById('signup-form');
@@ -164,19 +154,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadPage(target);
             });
         });
+
+        // Load the initial page based on the URL hash
+        const currentHash = window.location.hash || '#dashboard';
+        loadPage(currentHash);
+    }
+
+    // --- Admin Panel Logic (admin.html) ---
+    if (window.location.pathname.endsWith('admin.html')) {
+        auth.onAuthStateChanged(user => {
+            if (user && user.email === adminEmail) {
+                loadAdminPanel();
+            } else {
+                // Redirect non-admin users away from the admin page
+                if (!user) {
+                    window.location.href = 'sign-up.html';
+                } else {
+                    window.location.href = 'index.html';
+                }
+            }
+        });
     }
 
     // --- Dynamic Page Loading Functions ---
     async function loadPage(page) {
-        // Reset active class on nav links
+        // ... (Your loadPage function remains the same)
+        if (!mainContent) return;
+        mainContent.innerHTML = '';
+
         navLinks.forEach(link => link.classList.remove('active'));
         const activeLink = document.querySelector(`.nav-link[href="${page}"]`);
         if (activeLink) {
             activeLink.classList.add('active');
         }
-
-        if (!mainContent) return; // Exit if not on index.html
-        mainContent.innerHTML = ''; // Clear content
 
         switch (page) {
             case '#dashboard':
@@ -197,10 +207,8 @@ document.addEventListener('DOMContentLoaded', () => {
     async function renderDashboard() {
         const user = auth.currentUser;
         if (!user) return;
-
         const userDoc = await db.collection('users').doc(user.uid).get();
         const userData = userDoc.data();
-
         const dashboardHtml = `
             <div class="page-section">
                 <h2>Welcome, ${userData.name}!</h2>
@@ -218,8 +226,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         mainContent.innerHTML = dashboardHtml;
-
-        // Fetch and display quests
         const questsSnapshot = await db.collection('quests').get();
         let questsHtml = '<ul>';
         questsSnapshot.forEach(doc => {
@@ -231,8 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentQuestsEl) {
             currentQuestsEl.innerHTML += questsHtml;
         }
-
-        // Fetch and display top 5 leaderboard
         const leaderboardSnapshot = await db.collection('users').orderBy('points', 'desc').limit(5).get();
         let leaderboardHtml = '<table><thead><tr><th>Rank</th><th>Name</th><th>Points</th></tr></thead><tbody>';
         let rank = 1;
@@ -312,7 +316,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (mainContent) {
             mainContent.innerHTML = leaderboardHtml;
         }
-
         const user = auth.currentUser;
         if (!user) return;
         const userDoc = await db.collection('users').doc(user.uid).get();
@@ -331,10 +334,8 @@ document.addEventListener('DOMContentLoaded', () => {
     async function renderProfile() {
         const user = auth.currentUser;
         if (!user) return;
-
         const userDoc = await db.collection('users').doc(user.uid).get();
         const userData = userDoc.data();
-
         const profileHtml = `
             <div class="page-section">
                 <h2>My Profile</h2>
@@ -368,7 +369,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (mainContent) {
             mainContent.innerHTML = profileHtml;
         }
-
         const profileBadgesListEl = document.getElementById('profile-badges-list');
         if (profileBadgesListEl) {
             let badgesHtml = '';
@@ -377,17 +377,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             profileBadgesListEl.innerHTML = badgesHtml;
         }
-
         const editBtn = document.getElementById('edit-profile-btn');
         const editSection = document.getElementById('edit-profile-section');
         const editForm = document.getElementById('edit-profile-form');
-
         if (editBtn && editSection) {
             editBtn.addEventListener('click', () => {
                 editSection.style.display = 'block';
             });
         }
-
         if (editForm) {
             editForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -403,7 +400,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
     // --- Admin Panel Logic (for admin.html) ---
     function loadAdminPanel() {
         const addQuestForm = document.getElementById('add-quest-form');
@@ -411,60 +407,57 @@ document.addEventListener('DOMContentLoaded', () => {
         const questList = document.getElementById('quest-list');
         const badgeList = document.getElementById('badge-list');
 
-        // Add Quest
-        if (addQuestForm) {
-            addQuestForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const name = addQuestForm['quest-name'].value;
-                const points = parseInt(addQuestForm['quest-points'].value);
-                const type = addQuestForm['quest-type'].value;
-                const description = addQuestForm['quest-description'].value;
-                await db.collection('quests').add({ name, points, type, description });
-                alert('Quest added!');
-                addQuestForm.reset();
-                displayQuests();
-            });
+        if (!addQuestForm || !addBadgeForm || !questList || !badgeList) {
+            console.error("Admin page elements not found. Cannot load admin panel.");
+            return;
         }
+        
+        // Add Quest
+        addQuestForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = addQuestForm['quest-name'].value;
+            const points = parseInt(addQuestForm['quest-points'].value);
+            const type = addQuestForm['quest-type'].value;
+            const description = addQuestForm['quest-description'].value;
+            await db.collection('quests').add({ name, points, type, description });
+            alert('Quest added!');
+            addQuestForm.reset();
+            displayQuests();
+        });
 
         // Add Badge
-        if (addBadgeForm) {
-            addBadgeForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const name = addBadgeForm['badge-name'].value;
-                const description = addBadgeForm['badge-description'].value;
-                await db.collection('badges').add({ name, description });
-                alert('Badge added!');
-                addBadgeForm.reset();
-                displayBadges();
-            });
-        }
+        addBadgeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = addBadgeForm['badge-name'].value;
+            const description = addBadgeForm['badge-description'].value;
+            await db.collection('badges').add({ name, description });
+            alert('Badge added!');
+            addBadgeForm.reset();
+            displayBadges();
+        });
 
         // Display Quests
         async function displayQuests() {
-            if (questList) {
-                questList.innerHTML = '';
-                const snapshot = await db.collection('quests').get();
-                snapshot.forEach(doc => {
-                    const quest = doc.data();
-                    const li = document.createElement('li');
-                    li.innerHTML = `${quest.name} (+${quest.points} pts) <button class="delete-btn" data-id="${doc.id}">Delete</button>`;
-                    questList.appendChild(li);
-                });
-            }
+            questList.innerHTML = '';
+            const snapshot = await db.collection('quests').get();
+            snapshot.forEach(doc => {
+                const quest = doc.data();
+                const li = document.createElement('li');
+                li.innerHTML = `${quest.name} (+${quest.points} pts) <button class="delete-btn" data-id="${doc.id}">Delete</button>`;
+                questList.appendChild(li);
+            });
         }
 
         // Display Badges
         async function displayBadges() {
-            if (badgeList) {
-                badgeList.innerHTML = '';
-                const snapshot = await db.collection('badges').get();
-                snapshot.forEach(doc => {
-                    const badge = doc.data();
-                    const li = document.createElement('li');
-                    li.innerHTML = `${badge.name} <button class="delete-btn" data-id="${doc.id}">Delete</button>`;
-                    badgeList.appendChild(li);
-                });
-            }
+            badgeList.innerHTML = '';
+            const snapshot = await db.collection('badges').get();
+            snapshot.forEach(doc => {
+                const badge = doc.data();
+                const li = document.createElement('li');
+                li.innerHTML = `${badge.name} <button class="delete-btn" data-id="${doc.id}">Delete</button>`;
+                badgeList.appendChild(li);
+            });
         }
 
         // Delete functionality
