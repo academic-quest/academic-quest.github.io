@@ -67,48 +67,49 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Login and Signup Form Logic ---
-    const loginForm = document.getElementById('login-form');
-    const signupForm = document.getElementById('signup-form');
-    const showLoginLink = document.getElementById('show-login-link');
-    const showSignupLink = document.getElementById('show-signup-link');
-    const loginSection = document.getElementById('login-section');
-    const signupSection = document.getElementById('signup-section');
+// --- Auth Page Toggle (Login/Signup) ---
+const loginSection = document.getElementById('login-section');
+const signupSection = document.getElementById('signup-section');
+const showSignupLink = document.getElementById('show-signup-link');
+const showLoginLink = document.getElementById('show-login-link');
+const loginForm = document.getElementById('login-form');
+const signupForm = document.getElementById('signup-form');
 
-    if (showLoginLink && showSignupLink) {
-        showLoginLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            loginSection.style.display = 'block';
-            signupSection.style.display = 'none';
-        });
+// This check prevents the script from crashing on pages other than sign-up.html
+if (loginSection && signupSection && showSignupLink && showLoginLink) {
+    showSignupLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        loginSection.style.display = 'none';
+        signupSection.style.display = 'block';
+    });
 
-        showSignupLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            loginSection.style.display = 'none';
-            signupSection.style.display = 'block';
-        });
-    }
-    
-    // Handle Login Form Submission
-    if (loginForm) {
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const email = loginForm['login-email'].value;
-            const password = loginForm['login-password'].value;
-            
-            auth.signInWithEmailAndPassword(email, password)
-                .then((cred) => {
-                    console.log('User logged in successfully:', cred.user);
-                    window.location.href = 'index.html';
-                })
-                .catch((error) => {
-                    console.error('Login Error:', error);
-                    alert(`Login failed: ${error.message}`);
-                });
-        });
-    }
-    
-// Find this event listener and replace it
+    showLoginLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        signupSection.style.display = 'none';
+        loginSection.style.display = 'block';
+    });
+}
+
+// --- Form Event Listeners ---
+
+// Only add the login listener if the login form exists on the page
+if (loginForm) {
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = loginForm['login-email'].value;
+        const password = loginForm['login-password'].value;
+
+        auth.signInWithEmailAndPassword(email, password)
+            .then(() => {
+                window.location.href = 'index.html';
+            })
+            .catch((error) => {
+                alert(error.message);
+            });
+    });
+}
+
+// Only add the signup listener if the signup form exists on the page
 if (signupForm) {
     signupForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -127,7 +128,7 @@ if (signupForm) {
 
         auth.createUserWithEmailAndPassword(email, password)
             .then((cred) => {
-                // This creates the user's profile in the database
+                // Use the corrected 'completedQuests' field name
                 return db.collection('users').doc(cred.user.uid).set({
                     name: name,
                     universityId: universityId,
@@ -136,7 +137,7 @@ if (signupForm) {
                     year: year,
                     points: 0,
                     badges: [],
-                    completedQuests: [] // <-- CORRECTED FIELD NAME
+                    completedQuests: []
                 });
             })
             .then(() => {
