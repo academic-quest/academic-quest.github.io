@@ -26,7 +26,7 @@ const mainContent = document.getElementById('content');
 const userEmailSpan = document.getElementById('user-email');
 const adminLinkContainer = document.getElementById('admin-link-container');
 const logoutBtn = document.getElementById('logout-btn');
-const adminLogoutBtn = document.getElementById('admin-logout-btn');
+
 
 const adminEmail = "admin@admin.com";
 
@@ -133,13 +133,6 @@ if (loginForm) {
 // Logout
 if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-        auth.signOut().then(() => {
-            window.location.href = 'sign-up.html';
-        });
-    });
-}
-if (adminLogoutBtn) {
-    adminLogoutBtn.addEventListener('click', () => {
         auth.signOut().then(() => {
             window.location.href = 'sign-up.html';
         });
@@ -370,6 +363,16 @@ function loadAdminPanel() {
     const questList = document.getElementById('quest-list');
     const badgeList = document.getElementById('badge-list');
 
+    // Get the logout button reference INSIDE this function
+    const adminLogoutBtn = document.getElementById('admin-logout-btn');
+    if (adminLogoutBtn) {
+    adminLogoutBtn.addEventListener('click', () => {
+        auth.signOut().then(() => {
+            window.location.href = 'sign-up.html';
+        });
+    });
+}
+  
     // Add Quest
     addQuestForm.addEventListener('submit', async (e) => {
         e.preventDefault();
