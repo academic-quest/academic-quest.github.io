@@ -15,7 +15,7 @@ const db = firebase.firestore();
 
 const adminEmail = "admin@admin.com";
 
-// --- General Auth Listener (Handles all pages) ---
+// --- General Authentication and Redirection Listener ---
 auth.onAuthStateChanged(user => {
     const currentPath = window.location.pathname;
 
@@ -29,8 +29,7 @@ auth.onAuthStateChanged(user => {
         if (userEmailSpan) {
             userEmailSpan.textContent = user.email;
         }
-        
-        // Show/hide admin link
+
         const adminLinkContainer = document.getElementById('admin-link-container');
         if (adminLinkContainer) {
             if (user.email === adminEmail) {
@@ -39,7 +38,6 @@ auth.onAuthStateChanged(user => {
                 adminLinkContainer.style.display = 'none';
             }
         }
-
     } else {
         // No user logged in, redirect to login page if not already there
         if (!currentPath.endsWith('sign-up.html')) {
@@ -48,7 +46,7 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-// --- Logout Logic (for all pages with a logout button) ---
+// --- Logout Logic ---
 document.addEventListener('DOMContentLoaded', () => {
     const logoutBtn = document.getElementById('logout-btn');
     const adminLogoutBtn = document.getElementById('admin-logout-btn');
@@ -66,6 +64,88 @@ document.addEventListener('DOMContentLoaded', () => {
             auth.signOut().then(() => {
                 window.location.href = 'sign-up.html';
             });
+        });
+    }
+
+    // --- Login and Signup Form Logic ---
+    const loginForm = document.getElementById('login-form');
+    const signupForm = document.getElementById('signup-form');
+    const showLoginLink = document.getElementById('show-login-link');
+    const showSignupLink = document.getElementById('show-signup-link');
+    const loginSection = document.getElementById('login-section');
+    const signupSection = document.getElementById('signup-section');
+
+    if (showLoginLink && showSignupLink) {
+        showLoginLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            loginSection.style.display = 'block';
+            signupSection.style.display = 'none';
+        });
+
+        showSignupLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            loginSection.style.display = 'none';
+            signupSection.style.display = 'block';
+        });
+    }
+    
+    // Handle Login Form Submission
+    if (loginForm) {
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = loginForm['login-email'].value;
+            const password = loginForm['login-password'].value;
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .then((cred) => {
+                    console.log('User logged in successfully:', cred.user);
+                    window.location.href = 'index.html';
+                })
+                .catch((error) => {
+                    console.error('Login Error:', error);
+                    alert(`Login failed: ${error.message}`);
+                });
+        });
+    }
+    
+    // Handle Signup Form Submission
+    if (signupForm) {
+        signupForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = signupForm['signup-name'].value;
+            const universityId = signupForm['signup-id'].value;
+            const email = signupForm['signup-email'].value;
+            const password = signupForm['signup-password'].value;
+            const passwordConfirm = signupForm['signup-password-confirm'].value;
+            const courses = signupForm['signup-courses'].value.split(',').map(c => c.trim());
+            const year = signupForm['student-year'].value;
+
+            if (password !== passwordConfirm) {
+                alert('Passwords do not match!');
+                return;
+            }
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((cred) => {
+                    return db.collection('users').doc(cred.user.uid).set({
+                        name: name,
+                        universityId: universityId,
+                        email: email,
+                        courses: courses,
+                        year: year,
+                        points: 0,
+                        badges: [],
+                        questsCompleted: []
+                    });
+                })
+                .then(() => {
+                    alert('Account created successfully!');
+                    window.location.href = 'index.html';
+                })
+                .catch((error) => {
+                    console.error('Signup Error:', error);
+                    alert(`Signup failed: ${error.message}`);
+                });
         });
     }
 });
