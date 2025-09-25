@@ -108,44 +108,44 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Handle Signup Form Submission
-    if (signupForm) {
-        signupForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const name = signupForm['signup-name'].value;
-            const universityId = signupForm['signup-id'].value;
-            const email = signupForm['signup-email'].value;
-            const password = signupForm['signup-password'].value;
-            const passwordConfirm = signupForm['signup-password-confirm'].value;
-            const courses = signupForm['signup-courses'].value.split(',').map(c => c.trim());
-            const year = signupForm['student-year'].value;
+// Find this event listener and replace it
+if (signupForm) {
+    signupForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = signupForm['signup-name'].value;
+        const universityId = signupForm['signup-id'].value;
+        const email = signupForm['signup-email'].value;
+        const password = signupForm['signup-password'].value;
+        const passwordConfirm = signupForm['signup-password-confirm'].value;
+        const courses = signupForm['signup-courses'].value.split(',').map(c => c.trim());
+        const year = signupForm['student-year'].value;
 
-            if (password !== passwordConfirm) {
-                alert('Passwords do not match!');
-                return;
-            }
+        if (password !== passwordConfirm) {
+            alert('Passwords do not match!');
+            return;
+        }
 
-            auth.createUserWithEmailAndPassword(email, password)
-                .then((cred) => {
-                    return db.collection('users').doc(cred.user.uid).set({
-                        name: name,
-                        universityId: universityId,
-                        email: email,
-                        courses: courses,
-                        year: year,
-                        points: 0,
-                        badges: [],
-                        questsCompleted: []
-                    });
-                })
-                .then(() => {
-                    alert('Account created successfully!');
-                    window.location.href = 'index.html';
-                })
-                .catch((error) => {
-                    console.error('Signup Error:', error);
-                    alert(`Signup failed: ${error.message}`);
+        auth.createUserWithEmailAndPassword(email, password)
+            .then((cred) => {
+                // This creates the user's profile in the database
+                return db.collection('users').doc(cred.user.uid).set({
+                    name: name,
+                    universityId: universityId,
+                    email: email,
+                    courses: courses,
+                    year: year,
+                    points: 0,
+                    badges: [],
+                    completedQuests: [] // <-- CORRECTED FIELD NAME
                 });
-        });
-    }
-});
+            })
+            .then(() => {
+                alert('Account created successfully!');
+                window.location.href = 'index.html';
+            })
+            .catch((error) => {
+                console.error('Signup Error:', error);
+                alert(`Signup failed: ${error.message}`);
+            });
+    });
+}
