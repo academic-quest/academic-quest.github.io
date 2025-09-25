@@ -256,6 +256,34 @@ async function renderDashboard(user) {
         }
     }
 
+async function renderQuests(user) {
+    const mainContent = document.getElementById('content');
+    mainContent.innerHTML = `
+        <div class="quests-container">
+            <h2>Available Quests</h2>
+            <ul id="quests-list"></ul>
+        </div>
+    `;
+    const questsList = document.getElementById('quests-list');
+    const questsSnapshot = await db.collection('quests').get();
+
+    if (!questsSnapshot.empty) {
+        questsSnapshot.forEach(doc => {
+            const quest = doc.data();
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <h4>${quest.name}</h4>
+                <p>${quest.description}</p>
+                <span>Points: ${quest.points}</span>
+            `;
+            questsList.appendChild(li);
+        });
+    } else {
+        questsList.innerHTML = '<p>No quests available at the moment. Check back later!</p>';
+    }
+}
+
+    
     async function completeQuest(userId, questId, points) {
         try {
             await db.collection('completedQuests').add({
