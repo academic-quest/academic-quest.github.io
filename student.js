@@ -71,32 +71,55 @@ document.addEventListener('DOMContentLoaded', () => {
 // Add or modify the renderDashboard function
 async function renderDashboard(user) {
     const mainContent = document.getElementById('content');
-    const userDoc = await db.collection('users').doc(user.uid).get();
-    const userData = userDoc.data() || { points: 0, badges: [] };
-    const points = userData.points || 0;
-    const level = calculateLevel(points);
+    // Show a loading state first
+    mainContent.innerHTML = '<h2>Loading Dashboard...</h2>'; 
 
-    mainContent.innerHTML = `
-        <div class="dashboard-container">
-            <h2>Welcome, ${userData.name}!</h2>
-            <div class="stats-card">
-                <div class="stat-item">
-                    <h3>Total Points</h3>
-                    <p>${points}</p>
-                </div>
-                <div class="stat-item">
-                    <h3>Current Level</h3>
-                    <p>${level}</p>
+    try {
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        if (!userDoc.exists) {
+            mainContent.innerHTML = '<h2>Error: User data not found.</h2>';
+            return;
+        }
+
+        const userData = userDoc.data();
+        const points = userData.points || 0;
+        const level = calculateLevel(points);
+        const pointsToNextLevel = 100 - (points % 100);
+        const progressPercentage = (points % 100);
+
+        mainContent.innerHTML = `
+            <div class="dashboard-container">
+                <h2>Welcome, ${userData.name || 'Student'}!</h2>
+                <div class="dashboard-grid">
+                    <div class="stats-card main-stats">
+                        <div class="progress-circle" style="--p:${progressPercentage};">
+                            <div class="progress-info">
+                                <h3>Level ${level}</h3>
+                                <span>${points} pts</span>
+                            </div>
+                        </div>
+                        <p>${pointsToNextLevel} points to the next level!</p>
+                    </div>
+                    <div class="stats-card">
+                        <h3>Points Breakdown</h3>
+                        <ul id="points-breakdown-list"></ul>
+                    </div>
+                    <div class="stats-card">
+                        <h3>Badges Earned</h3>
+                        <div id="badges-earned-list" class="badge-display">
+                            ${(userData.badges && userData.badges.length > 0) ? userData.badges.map(b => `<span>${b}</span>`).join('') : '<p>No badges yet!</p>'}
+                        </div>
+                    </div>
                 </div>
             </div>
-            <p>${100 - (points % 100)} points to the next level!</p>
-            <h3>Recent Activity</h3>
-            <ul id="activity-log-list"></ul>
-        </div>
-    `;
-    await renderActivityLog(user);
+        `;
+        // Now that the container exists, render the points breakdown
+        await renderPointsBreakdown(user);
+    } catch (error) {
+        console.error("Error rendering dashboard: ", error);
+        mainContent.innerHTML = '<h2>Could not load dashboard.</h2>';
+    }
 }
-
 
 
     
@@ -299,59 +322,91 @@ async function completeQuest(user, questId, points, badge) {
     window.location.reload();
 }
     
-    async function renderLeaderboard(user) {
-        const leaderboardList = document.getElementById('leaderboard-list');
-        leaderboardList.innerHTML = '<li>Loading...</li>';
-        try {
-            const usersSnapshot = await db.collection('users').orderBy('points', 'desc').get();
-            leaderboardList.innerHTML = '';
-            let rank = 1;
-            if (!usersSnapshot.empty) {
-                usersSnapshot.forEach(doc => {
-                    const leaderboardUser = doc.data();
-                    const li = document.createElement('li');
-                    li.classList.add('leaderboard-item');
-                    li.innerHTML = `
-                        <div class="leaderboard-rank">#${rank}</div>
-                        <div class="leaderboard-info">
-                            <span class="leaderboard-name">${leaderboardUser.name}</span>
-                            <span class="leaderboard-id">ID: ${leaderboardUser.universityId}</span>
-                        </div>
-                        <div class="leaderboard-score">
-                            <span class="leaderboard-level">Level ${calculateLevel(leaderboardUser.points)}</span>
-                            <span class="leaderboard-points">${leaderboardUser.points} pts</span>
-                        </div>
-                    `;
-                    leaderboardList.appendChild(li);
-                    rank++;
-                });
-            } else {
-                leaderboardList.innerHTML = '<p>No users on the leaderboard yet.</p>';
-            }
-        } catch (error) {
-            console.error("Error rendering leaderboard: ", error);
+async function renderLeaderboard(user) {
+    const mainContent = document.getElementById('content');
+    mainContent.innerHTML = `
+        <div class="leaderboard-container">
+            <h2>Leaderboard</h2>
+            <ul id="leaderboard-list"><li>Loading...</li></ul>
+        </div>
+    `;
+    const leaderboardList = document.getElementById('leaderboard-list');
+    
+    try {
+        const usersSnapshot = await db.collection('users').orderBy('points', 'desc').get();
+        leaderboardList.innerHTML = ''; // Clear the 'Loading...' message
+        let rank = 1;
+        if (!usersSnapshot.empty) {
+            usersSnapshot.forEach(doc => {
+                const leaderboardUser = doc.data();
+                const li = document.createElement('li');
+                li.classList.add('leaderboard-item');
+                // Highlight the current user
+                if (doc.id === user.uid) {
+                    li.classList.add('current-user');
+                }
+                li.innerHTML = `
+                    <div class="leaderboard-rank">#${rank}</div>
+                    <div class="leaderboard-info">
+                        <span class="leaderboard-name">${leaderboardUser.name}</span>
+                        <span class="leaderboard-id">ID: ${leaderboardUser.universityId}</span>
+                    </div>
+                    <div class="leaderboard-score">
+                        <span class="leaderboard-level">Level ${calculateLevel(leaderboardUser.points)}</span>
+                        <span class="leaderboard-points">${leaderboardUser.points} pts</span>
+                    </div>
+                `;
+                leaderboardList.appendChild(li);
+                rank++;
+            });
+        } else {
+            leaderboardList.innerHTML = '<p>No users on the leaderboard yet.</p>';
         }
+    } catch (error) {
+        console.error("Error rendering leaderboard: ", error);
+        leaderboardList.innerHTML = '<p>Could not load leaderboard.</p>';
+    }
+}
+
+async function renderProfile(user) {
+    const mainContent = document.getElementById('content');
+    const userDoc = await db.collection('users').doc(user.uid).get();
+    
+    let userData = {};
+    if (userDoc.exists) {
+        userData = userDoc.data();
     }
 
-    async function renderProfile(user) {
-        const profileForm = document.getElementById('profile-form');
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        if (userDoc.exists) {
-            const userData = userDoc.data();
-            document.getElementById('profile-card-name').textContent = userData.name || 'N/A';
-            document.getElementById('profile-card-year').textContent = `University Year: ${userData.year || 'N/A'}`;
-            document.getElementById('profile-name').value = userData.name || '';
-            document.getElementById('profile-id').value = userData.universityId || '';
-            document.getElementById('profile-email').value = user.email;
-            document.getElementById('profile-year').value = userData.year || 'Freshman';
-            document.getElementById('profile-courses').value = userData.courses.join(', ') || '';
-        }
+    mainContent.innerHTML = `
+        <div class="profile-container">
+            <h2>My Profile</h2>
+            <div class="profile-card">
+                <h3 id="profile-card-name">${userData.name || 'N/A'}</h3>
+                <p id="profile-card-year">University Year: ${userData.year || 'N/A'}</p>
+            </div>
+            <form id="profile-form">
+                <input type="text" id="profile-name" placeholder="Full Name" value="${userData.name || ''}" required>
+                <input type="text" id="profile-id" placeholder="University ID" value="${userData.universityId || ''}" required>
+                <input type="email" id="profile-email" placeholder="Email" value="${user.email}" disabled>
+                <select id="profile-year">
+                    <option value="Freshman" ${userData.year === 'Freshman' ? 'selected' : ''}>Freshman</option>
+                    <option value="Sophomore" ${userData.year === 'Sophomore' ? 'selected' : ''}>Sophomore</option>
+                    <option value="Junior" ${userData.year === 'Junior' ? 'selected' : ''}>Junior</option>
+                    <option value="Senior" ${userData.year === 'Senior' ? 'selected' : ''}>Senior</option>
+                </select>
+                <textarea id="profile-courses" placeholder="Courses (comma-separated)">${(userData.courses || []).join(', ')}</textarea>
+                <button type="submit">Update Profile</button>
+            </form>
+        </div>
+    `;
 
-        profileForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await updateProfile(user.uid);
-        });
-    }
+    // Re-attach event listener since we are overwriting the HTML
+    const profileForm = document.getElementById('profile-form');
+    profileForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await updateProfile(user.uid);
+    });
+}
 
     async function updateProfile(userId) {
         const name = document.getElementById('profile-name').value;
