@@ -59,8 +59,6 @@ auth.onAuthStateChanged(user => {
 
 // --- Separate DOMContentLoaded for specific page logic ---
 document.addEventListener('DOMContentLoaded', () => {
-    const mainContent = document.getElementById('content');
-    if (!mainContent) return;
 
     // --- Login and Sign-up Page Logic (sign-up.html) ---
     const signupForm = document.getElementById('signup-form');
@@ -111,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     courses: courses,
                     year: year,
                     points: 0,
-                    level: 1, // Start at level 1
+                    level: 1,
                     badges: [],
                     questsCompleted: []
                 });
@@ -158,6 +156,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Dynamic Page Loading Logic (index.html) ---
+    const mainContent = document.getElementById('content');
+    if (!mainContent) {
+        // This is not the main index page, so no need for dynamic content loading.
+        // The code above handles sign-up/login.
+        return;
+    }
+
     const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
