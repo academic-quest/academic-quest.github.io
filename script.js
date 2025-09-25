@@ -31,15 +31,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             userEmailSpan.textContent = user.email;
-            if (user.email === adminEmail) {
-                if (adminLinkContainer) {
-                    adminLinkContainer.style.display = 'list-item';
-                }
-            } else {
-                if (adminLinkContainer) {
-                    adminLinkContainer.style.display = 'none';
-                }
+           if (user.email === adminEmail) {
+            if (adminLinkContainer) {
+                adminLinkContainer.style.display = 'list-item';
             }
+            // Add this specific check
+            if (window.location.pathname.endsWith('admin.html')) {
+                loadAdminPanel();
+            }
+        } else {
+            if (adminLinkContainer) {
+                adminLinkContainer.style.display = 'none';
+            }
+        }
 
             // Load page content for index.html
             if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/') {
