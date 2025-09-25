@@ -330,38 +330,76 @@ document.addEventListener('DOMContentLoaded', () => {
     async function renderProfile() {
         const user = auth.currentUser;
         if (!user) return;
+
         const userDoc = await db.collection('users').doc(user.uid).get();
         const userData = userDoc.data();
+
         const profileHtml = `
             <div class="page-section">
                 <h2>My Profile</h2>
-                <p><strong>Name:</strong> ${userData.name}</p>
-                <p><strong>University ID:</strong> ${userData.universityId}</p>
-                <p><strong>Email:</strong> ${userData.email}</p>
-                <p><strong>Courses:</strong> ${userData.courses.join(', ')}</p>
-                <p><strong>University Year:</strong> <span id="current-year">${userData.year}</span></p>
-                <button id="edit-profile-btn">Edit Profile</button>
-            </div>
-            
-            <div class="page-section" id="edit-profile-section" style="display:none;">
-                <h3>Edit My Profile</h3>
                 <form id="edit-profile-form">
-                    <label for="edit-year">Change University Year:</label>
-                    <select id="edit-year" required>
-                        <option value="Freshman" ${userData.year === 'Freshman' ? 'selected' : ''}>Freshman</option>
-                        <option value="Sophomore" ${userData.year === 'Sophomore' ? 'selected' : ''}>Sophomore</option>
-                        <option value="Junior" ${userData.year === 'Junior' ? 'selected' : ''}>Junior</option>
-                        <option value="Senior" ${userData.year === 'Senior' ? 'selected' : ''}>Senior</option>
-                    </select>
-                    <button type="submit">Save Changes</button>
+                    <div class="form-group">
+                        <label for="profile-name">Full Name</label>
+                        <input type="text" id="profile-name" value="${userData.name}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-id">University ID</label>
+                        <input type="text" id="profile-id" value="${userData.universityId}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-email">Email</label>
+                        <input type="email" id="profile-email" value="${userData.email}" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-year">University Year</label>
+                        <select id="profile-year" required>
+                            <option value="Freshman" ${userData.year === 'Freshman' ? 'selected' : ''}>Freshman</option>
+                            <option value="Sophomore" ${userData.year === 'Sophomore' ? 'selected' : ''}>Sophomore</option>
+                            <option value="Junior" ${userData.year === 'Junior' ? 'selected' : ''}>Junior</option>
+                            <option value="Senior" ${userData.year === 'Senior' ? 'selected' : ''}>Senior</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-courses">Courses (comma-separated)</label>
+                        <input type="text" id="profile-courses" value="${userData.courses.join(', ')}" required>
+                    </div>
+                    <button type="submit" class="btn">Save Changes</button>
                 </form>
             </div>
-            
             <div class="page-section">
-                <h3>My Badges</h3>
-                <ul id="profile-badges-list"></ul>
+                <h2>Activity Log</h2>
+                <ul id="activity-log">
+                    </ul>
             </div>
         `;
+        if (mainContent) {
+            mainContent.innerHTML = profileHtml;
+            document.getElementById('edit-profile-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await updateProfile(user.uid);
+            });
+        }
+    }
+
+    async function updateProfile(userId) {
+        const name = document.getElementById('profile-name').value;
+        const id = document.getElementById('profile-id').value;
+        const year = document.getElementById('profile-year').value;
+        const courses = document.getElementById('profile-courses').value.split(',').map(c => c.trim());
+
+        try {
+            await db.collection('users').doc(userId).update({
+                name: name,
+                universityId: id,
+                year: year,
+                courses: courses
+            });
+            alert('Profile updated successfully!');
+        } catch (error) {
+            console.error("Error updating profile: ", error);
+            alert('Failed to update profile.');
+        }
+    }
         if (mainContent) {
             mainContent.innerHTML = profileHtml;
         }
@@ -397,82 +435,104 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Admin Panel Logic (for admin.html) ---
-    function loadAdminPanel() {
-        const addQuestForm = document.getElementById('add-quest-form');
-        const addBadgeForm = document.getElementById('add-badge-form');
-        const questList = document.getElementById('quest-list');
-        const badgeList = document.getElementById('badge-list');
+function loadAdminPanel() {
+    const addQuestForm = document.getElementById('add-quest-form');
+    const addBadgeForm = document.getElementById('add-badge-form');
+    const questList = document.getElementById('quest-list');
+    const badgeList = document.getElementById('badge-list');
 
-        if (!addQuestForm || !addBadgeForm || !questList || !badgeList) {
-            console.error("Admin page elements not found. Cannot load admin panel.");
-            return;
-        }
-        
-        // Add Quest
-        addQuestForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = addQuestForm['quest-name'].value;
-            const points = parseInt(addQuestForm['quest-points'].value);
-            const type = addQuestForm['quest-type'].value;
-            const description = addQuestForm['quest-description'].value;
-            await db.collection('quests').add({ name, points, type, description });
-            alert('Quest added!');
-            addQuestForm.reset();
-            displayQuests();
-        });
-
-        // Add Badge
-        addBadgeForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = addBadgeForm['badge-name'].value;
-            const description = addBadgeForm['badge-description'].value;
-            await db.collection('badges').add({ name, description });
-            alert('Badge added!');
-            addBadgeForm.reset();
-            displayBadges();
-        });
-
-        // Display Quests
-        async function displayQuests() {
-            questList.innerHTML = '';
-            const snapshot = await db.collection('quests').get();
-            snapshot.forEach(doc => {
-                const quest = doc.data();
-                const li = document.createElement('li');
-                li.innerHTML = `${quest.name} (+${quest.points} pts) <button class="delete-btn" data-id="${doc.id}">Delete</button>`;
-                questList.appendChild(li);
-            });
-        }
-
-        // Display Badges
-        async function displayBadges() {
-            badgeList.innerHTML = '';
-            const snapshot = await db.collection('badges').get();
-            snapshot.forEach(doc => {
-                const badge = doc.data();
-                const li = document.createElement('li');
-                li.innerHTML = `${badge.name} <button class="delete-btn" data-id="${doc.id}">Delete</button>`;
-                badgeList.appendChild(li);
-            });
-        }
-
-        // Delete functionality
-        document.addEventListener('click', async (e) => {
-            if (e.target.classList.contains('delete-btn')) {
-                const docId = e.target.dataset.id;
-                const collectionName = e.target.closest('ul').id === 'quest-list' ? 'quests' : 'badges';
-                await db.collection(collectionName).doc(docId).delete();
-                alert('Item deleted!');
-                if (collectionName === 'quests') {
-                    displayQuests();
-                } else {
-                    displayBadges();
-                }
-            }
-        });
-
-        // Initial calls
-        displayQuests();
-        displayBadges();
+    if (!addQuestForm || !addBadgeForm || !questList || !badgeList) {
+        console.error("Admin page elements not found. Cannot load admin panel.");
+        return;
     }
-});
+
+    // Add Quest
+    addQuestForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = addQuestForm['quest-name'].value;
+        const points = parseInt(addQuestForm['quest-points'].value);
+        const type = addQuestForm['quest-type'].value;
+        const description = addQuestForm['quest-description'].value;
+        await db.collection('quests').add({ name, points, type, description });
+        alert('Quest added!');
+        addQuestForm.reset();
+        displayQuests();
+    });
+
+    // Add Badge
+    addBadgeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = addBadgeForm['badge-name'].value;
+        const description = addBadgeForm['badge-description'].value;
+        await db.collection('badges').add({ name, description });
+        alert('Badge added!');
+        addBadgeForm.reset();
+        displayBadges();
+    });
+
+    // Display Quests
+    async function displayQuests() {
+        questList.innerHTML = '';
+        const snapshot = await db.collection('quests').get();
+        snapshot.forEach(doc => {
+            const quest = doc.data();
+            const li = document.createElement('li');
+            li.innerHTML = `
+                ${quest.name} (+${quest.points} pts) 
+                <button class="edit-btn" data-id="${doc.id}">Edit</button>
+                <button class="delete-btn" data-id="${doc.id}">Delete</button>
+            `;
+            questList.appendChild(li);
+        });
+    }
+
+    // Display Badges
+    async function displayBadges() {
+        badgeList.innerHTML = '';
+        const snapshot = await db.collection('badges').get();
+        snapshot.forEach(doc => {
+            const badge = doc.data();
+            const li = document.createElement('li');
+            li.innerHTML = `${badge.name} <button class="delete-btn" data-id="${doc.id}">Delete</button>`;
+            badgeList.appendChild(li);
+        });
+    }
+
+    // Delete and Edit functionality
+    document.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('delete-btn')) {
+            const docId = e.target.dataset.id;
+            const collectionName = e.target.closest('ul').id === 'quest-list' ? 'quests' : 'badges';
+            await db.collection(collectionName).doc(docId).delete();
+            alert('Item deleted!');
+            if (collectionName === 'quests') {
+                displayQuests();
+            } else {
+                displayBadges();
+            }
+        } else if (e.target.classList.contains('edit-btn')) {
+            const docId = e.target.dataset.id;
+            const newName = prompt("Enter new quest name:");
+            const newPoints = prompt("Enter new points:");
+            const newType = prompt("Enter new type:");
+            const newDescription = prompt("Enter new description:");
+
+            if (newName !== null && newPoints !== null && newType !== null && newDescription !== null) {
+                await db.collection('quests').doc(docId).update({
+                    name: newName,
+                    points: parseInt(newPoints),
+                    type: newType,
+                    description: newDescription
+                });
+                alert('Quest updated successfully!');
+                displayQuests();
+            } else {
+                alert('Update cancelled.');
+            }
+        }
+    });
+
+    // Initial calls
+    displayQuests();
+    displayBadges();
+}
