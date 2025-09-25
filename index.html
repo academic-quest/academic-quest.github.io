@@ -3,32 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Progress Tracker</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="./styles/main.css">
+</head>
+<body>
+    <header class="main-header">
+        <h1>RSU Progress</h1>
+        <nav>
+            <a href="admin.html" id="admin-link" style="display: none;">Admin Panel</a>
+            <button id="logout-btn">Logout</button>
+        </nav>
+    </header>
+    <main id="app-root" class="app-container">
+        </main>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
-</head>
-<body>
-    <header>
-        <div class="logo"><h1>RSU Progress</h1></div>
-        <nav>
-            <ul>
-                <li><a href="#dashboard" class="nav-link active">Dashboard</a></li>
-                <li><a href="#quests" class="nav-link">Quests</a></li>
-                <li><a href="#leaderboard" class="nav-link">Leaderboard</a></li>
-                <li id="admin-link-container" style="display:none;"><a href="admin.html" class="nav-link">Admin Panel</a></li>
-            </ul>
-        </nav>
-        <div class="user-info">
-            <span id="user-email"></span>
-            <button id="logout-btn">Logout</button>
-        </div>
-    </header>
-
-    <main id="content" class="main-content"></main>
-
-    <script src="script.js"></script>
-    <script src="student.js"></script>
+    <script src="./scripts/firebase-config.js"></script>
+    <script src="./scripts/app.js"></script>
 </body>
 </html>
