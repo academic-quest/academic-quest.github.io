@@ -15,124 +15,144 @@ const db = firebase.firestore();
 
 const adminEmail = "admin@admin.com";
 
-// --- General Auth Listener (Handles all pages) ---
+// --- General Auth Listener ---
 auth.onAuthStateChanged(user => {
+    const currentPath = window.location.pathname;
+
     if (user) {
         // User is logged in
-        if (window.location.pathname.endsWith('sign-up.html')) {
+        if (currentPath.endsWith('sign-up.html')) {
             window.location.href = 'index.html';
-            return;
         }
 
         const userEmailSpan = document.getElementById('user-email');
         if (userEmailSpan) {
             userEmailSpan.textContent = user.email;
         }
-
+        
+        // Show/hide admin link
         const adminLinkContainer = document.getElementById('admin-link-container');
-        if (user.email === adminEmail) {
-            // User is the admin
-            if (adminLinkContainer) {
+        if (adminLinkContainer) {
+            if (user.email === adminEmail) {
                 adminLinkContainer.style.display = 'list-item';
-            }
-        } else {
-            // User is a regular student
-            if (adminLinkContainer) {
+            } else {
                 adminLinkContainer.style.display = 'none';
             }
         }
 
-        // Call student-specific logic ONLY on the index page
-        if (window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/')) {
-            window.initStudentDashboard(user);
-        }
-
     } else {
-        // No user is logged in, redirect to login page
-        window.location.href = 'sign-up.html';
+        // No user logged in, redirect to login page if not already there
+        if (!currentPath.endsWith('sign-up.html')) {
+            window.location.href = 'sign-up.html';
+        }
     }
 });
 
-
-// --- Separate DOMContentLoaded for specific page logic ---
+// --- Page-Specific Logic ---
 document.addEventListener('DOMContentLoaded', () => {
+    const currentPath = window.location.pathname;
 
-    // --- Login and Sign-up Page Logic (sign-up.html) ---
-    const signupForm = document.getElementById('signup-form');
-    const loginForm = document.getElementById('login-form');
-    const signupSection = document.getElementById('signup-section');
-    const loginSection = document.getElementById('login-section');
-    const showSignupLink = document.getElementById('show-signup-link');
-    const showLoginLink = document.getElementById('show-login-link');
-
-    if (showSignupLink) {
-        showSignupLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            loginSection.style.display = 'none';
-            signupSection.style.display = 'block';
-        });
-    }
-
-    if (showLoginLink) {
-        showLoginLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            signupSection.style.display = 'none';
-            loginSection.style.display = 'block';
-        });
-    }
-
-    if (signupForm) {
-        signupForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const passwordConfirm = signupForm['signup-password-confirm'].value;
-            const password = signupForm['signup-password'].value;
-            if (password !== passwordConfirm) {
-                alert('Passwords do not match!');
-                return;
+    // Logic for student dashboard page (index.html)
+    if (currentPath.endsWith('index.html') || currentPath.endsWith('/')) {
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                window.initStudentDashboard(user);
             }
+        });
+    }
 
-            const email = signupForm['signup-email'].value;
-            const name = signupForm['signup-name'].value;
-            const id = signupForm['signup-id'].value;
-            const courses = signupForm['signup-courses'].value.split(',').map(c => c.trim());
-            const year = signupForm['student-year'].value;
-
-            try {
-                const res = await auth.createUserWithEmailAndPassword(email, password);
-                await db.collection('users').doc(res.user.uid).set({
-                    name: name,
-                    universityId: id,
-                    email: email,
-                    courses: courses,
-                    year: year,
-                    points: 0,
-                    level: 1,
-                    badges: [],
-                    questsCompleted: []
-                });
-                alert('Account created successfully! Redirecting to dashboard...');
+    // Logic for admin panel page (admin.html)
+    if (currentPath.endsWith('admin.html')) {
+        auth.onAuthStateChanged(user => {
+            if (user && user.email === adminEmail) {
+                loadAdminPanel();
+            } else {
+                // Redirect non-admin users away from admin page
                 window.location.href = 'index.html';
-            } catch (error) {
-                alert(error.message);
             }
         });
     }
 
-    if (loginForm) {
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = loginForm['login-email'].value;
-            const password = loginForm['login-password'].value;
-            try {
-                await auth.signInWithEmailAndPassword(email, password);
-                window.location.href = 'index.html';
-            } catch (error) {
-                alert(error.message);
-            }
-        });
-    }
+    // Logic for auth page (sign-up.html)
+    if (currentPath.endsWith('sign-up.html')) {
+        const signupForm = document.getElementById('signup-form');
+        const loginForm = document.getElementById('login-form');
+        const signupSection = document.getElementById('signup-section');
+        const loginSection = document.getElementById('login-section');
+        const showSignupLink = document.getElementById('show-signup-link');
+        const showLoginLink = document.getElementById('show-login-link');
 
-    // --- Logout Logic ---
+        if (showSignupLink) {
+            showSignupLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginSection.style.display = 'none';
+                signupSection.style.display = 'block';
+            });
+        }
+
+        if (showLoginLink) {
+            showLoginLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                signupSection.style.display = 'none';
+                loginSection.style.display = 'block';
+            });
+        }
+
+        if (signupForm) {
+            signupForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const passwordConfirm = signupForm['signup-password-confirm'].value;
+                const password = signupForm['signup-password'].value;
+                if (password !== passwordConfirm) {
+                    alert('Passwords do not match!');
+                    return;
+                }
+
+                const email = signupForm['signup-email'].value;
+                const name = signupForm['signup-name'].value;
+                const id = signupForm['signup-id'].value;
+                const courses = signupForm['signup-courses'].value.split(',').map(c => c.trim());
+                const year = signupForm['student-year'].value;
+
+                try {
+                    const res = await auth.createUserWithEmailAndPassword(email, password);
+                    await db.collection('users').doc(res.user.uid).set({
+                        name: name,
+                        universityId: id,
+                        email: email,
+                        courses: courses,
+                        year: year,
+                        points: 0,
+                        level: 1,
+                        badges: [],
+                        questsCompleted: []
+                    });
+                    alert('Account created successfully! Redirecting to dashboard...');
+                    window.location.href = 'index.html';
+                } catch (error) {
+                    alert(error.message);
+                }
+            });
+        }
+
+        if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = loginForm['login-email'].value;
+                const password = loginForm['login-password'].value;
+                try {
+                    await auth.signInWithEmailAndPassword(email, password);
+                    window.location.href = 'index.html';
+                } catch (error) {
+                    alert(error.message);
+                }
+            });
+        }
+    }
+});
+
+// --- Logout Logic (for all pages with a logout button) ---
+document.addEventListener('DOMContentLoaded', () => {
     const logoutBtn = document.getElementById('logout-btn');
     const adminLogoutBtn = document.getElementById('admin-logout-btn');
 
@@ -230,13 +250,17 @@ function loadAdminPanel() {
             }
         } else if (e.target.classList.contains('edit-btn')) {
             const docId = e.target.dataset.id;
-            const newName = prompt("Enter new quest name:");
-            const newPoints = prompt("Enter new points:");
-            const newType = prompt("Enter new type:");
-            const newDescription = prompt("Enter new description:");
+            const docRef = db.collection('quests').doc(docId);
+            const doc = await docRef.get();
+            const currentData = doc.data();
+
+            const newName = prompt("Enter new quest name:", currentData.name);
+            const newPoints = prompt("Enter new points:", currentData.points);
+            const newType = prompt("Enter new type:", currentData.type);
+            const newDescription = prompt("Enter new description:", currentData.description);
 
             if (newName !== null && newPoints !== null && newType !== null && newDescription !== null) {
-                await db.collection('quests').doc(docId).update({
+                await docRef.update({
                     name: newName,
                     points: parseInt(newPoints),
                     type: newType,
