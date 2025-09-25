@@ -121,6 +121,36 @@ async function renderDashboard(user) {
     }
 }
 
+    function renderDashboardQuests(questsSnapshot, completedQuests) {
+    const questList = document.getElementById('dashboard-quest-list');
+    questList.innerHTML = '';
+    let availableQuests = 0;
+    questsSnapshot.forEach(doc => {
+        const quest = doc.data();
+        const isCompleted = completedQuests.includes(doc.id);
+        if (!isCompleted) {
+             availableQuests++;
+             const li = document.createElement('li');
+             li.innerHTML = `<span>${quest.name}</span> <span class="quest-points">+${quest.points}</span>`;
+             questList.appendChild(li);
+        }
+    });
+    if (availableQuests === 0) {
+        questList.innerHTML = '<li>No new quests available.</li>';
+    }
+}
+
+function renderDashboardLeaderboard(leaderboardSnapshot) {
+    const leaderboardList = document.getElementById('dashboard-leaderboard-list');
+    leaderboardList.innerHTML = '';
+    leaderboardSnapshot.forEach(doc => {
+        const user = doc.data();
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${user.name}</span> <span>${user.points} pts</span>`;
+        leaderboardList.appendChild(li);
+    });
+}
+
 
     
     async function renderQuestsOverview(user) {
@@ -213,71 +243,71 @@ async function renderDashboard(user) {
     }
 
 
-// Add or modify the renderQuests function
-async function renderQuests(user) {
+async function renderDashboard(user) {
     const mainContent = document.getElementById('content');
-    mainContent.innerHTML = `
-        <div class="quests-container">
-            <h2>Available Quests</h2>
-            <ul id="quests-list"></ul>
-        </div>
-    `;
-    const questsList = document.getElementById('quests-list');
-    const questsSnapshot = await db.collection('quests').get();
-    const userDoc = await db.collection('users').doc(user.uid).get();
-    const completedQuests = userDoc.data().completedQuests || [];
+    mainContent.innerHTML = '<div class="loading">Loading Dashboard...</div>';
 
-    if (!questsSnapshot.empty) {
-        questsSnapshot.forEach(doc => {
-            const quest = doc.data();
-            const questId = doc.id;
-            const isCompleted = completedQuests.includes(questId);
-            const deadline = quest.deadline ? new Date(quest.deadline) : null;
-            const isLate = deadline && new Date() > deadline;
+    try {
+        // Fetch all data at the same time
+        const [userDoc, questsSnapshot, leaderboardSnapshot] = await Promise.all([
+            db.collection('users').doc(user.uid).get(),
+            db.collection('quests').orderBy('deadline', 'desc').limit(5).get(),
+            db.collection('users').orderBy('points', 'desc').limit(5).get()
+        ]);
 
-            const li = document.createElement('li');
-            li.className = 'quest-item';
-            
-            let statusText = '';
-            let buttonHtml = '';
-            if (isCompleted) {
-                statusText = '<span class="completed">✅ Completed</span>';
-            } else if (isLate) {
-                statusText = '<span class="late">❌ Expired</span>';
-            } else {
-                buttonHtml = `<button class="take-points-btn" data-quest-id="${questId}" data-points="${quest.points}" data-badge="${quest.badge}">Take Points</button>`;
-            }
+        if (!userDoc.exists) {
+            mainContent.innerHTML = '<h2>Error: User data not found. Please sign up again with a new account.</h2>';
+            return;
+        }
 
-            const deadlineText = deadline ? `Due: ${deadline.toLocaleString()}` : 'No deadline';
-
-            li.innerHTML = `
-                <div class="quest-details">
-                    <h4>${quest.name}</h4>
-                    <p>${quest.description}</p>
-                    <span class="quest-points">Points: ${quest.points}</span>
-                    <span class="quest-deadline">${deadlineText}</span>
-                    ${statusText}
+        const userData = userDoc.data();
+        
+        mainContent.innerHTML = `
+            <div class="dashboard-grid">
+                <div class="dash-card card-user-info">
+                    <div class="profile-pic-placeholder"></div>
+                    <h3>${userData.name || 'Student'}</h3>
+                    <p>University ID: ${userData.universityId || 'N/A'}</p>
                 </div>
-                ${buttonHtml}
-            `;
-            questsList.appendChild(li);
-        });
+                <div class="dash-card card-quests">
+                    <h4>Current Quests</h4>
+                    <ul id="dashboard-quest-list"></ul>
+                </div>
+                <div class="dash-card card-journey">
+                    <h4>Academic Journey</h4>
+                    <div class="journey-stepper">
+                        <div class="step ${userData.year === 'Freshman' ? 'active' : ''}">Freshman</div>
+                        <div class="step ${userData.year === 'Sophomore' ? 'active' : ''}">Sophomore</div>
+                        <div class="step ${userData.year === 'Junior' ? 'active' : ''}">Junior</div>
+                        <div class="step ${userData.year === 'Senior' ? 'active' : ''}">Senior</div>
+                    </div>
+                </div>
+                <div class="dash-card card-leaderboard">
+                    <h4>Leaderboard - Top 5</h4>
+                    <ol id="dashboard-leaderboard-list"></ol>
+                </div>
+                <div class="dash-card card-points">
+                    <h4>Points Breakdown</h4>
+                    <div class="points-circle-placeholder">
+                        <p><strong>Total Points</strong><br>${userData.points || 0}</p>
+                    </div>
+                    <div id="points-breakdown-list"></div>
+                </div>
+            </div>
+        `;
 
-        // Add event listeners for "Take Points" buttons
-        document.querySelectorAll('.take-points-btn').forEach(button => {
-            button.addEventListener('click', async (e) => {
-                const questId = e.target.dataset.questId;
-                const points = parseInt(e.target.dataset.points);
-                const badge = e.target.dataset.badge;
+        renderDashboardQuests(questsSnapshot, userData.completedQuests || []);
+        renderDashboardLeaderboard(leaderboardSnapshot);
+        renderPointsBreakdown(user); // Re-using your existing function
 
-                await completeQuest(user, questId, points, badge);
-            });
-        });
-
-    } else {
-        questsList.innerHTML = '<p>No quests available at the moment. Check back later!</p>';
+    } catch (error) {
+        console.error("Error rendering dashboard: ", error);
+        mainContent.innerHTML = '<h2>Could not load dashboard.</h2>';
     }
 }
+
+
+    
     
 // Add this new function to handle quest completion
 async function completeQuest(user, questId, points, badge) {
