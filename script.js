@@ -8,7 +8,6 @@ const firebaseConfig = {
     appId: "1:44540247560:web:96e1d5bc34baf97e3b1bbd"
 };
 
-
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
@@ -43,18 +42,17 @@ auth.onAuthStateChanged(user => {
                 adminLinkContainer.style.display = 'none';
             }
         }
-        
+
         // --- Admin Panel Logic (Runs only on admin.html) ---
         if (window.location.pathname.endsWith('admin.html') && user.email === adminEmail) {
             loadAdminPanel();
         }
-
     } else {
         // No user is logged in
         if (!window.location.pathname.endsWith('sign-up.html')) {
             window.location.href = 'sign-up.html';
         }
-        
+
         // If on the admin page without a logged-in user, redirect
         if (window.location.pathname.endsWith('admin.html')) {
             window.location.href = 'sign-up.html';
@@ -93,8 +91,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (signupForm) {
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = signupForm['signup-email'].value;
+            const passwordConfirm = signupForm['signup-password-confirm'].value;
             const password = signupForm['signup-password'].value;
+            if (password !== passwordConfirm) {
+                alert('Passwords do not match!');
+                return;
+            }
+
+            const email = signupForm['signup-email'].value;
             const name = signupForm['signup-name'].value;
             const id = signupForm['signup-id'].value;
             const courses = signupForm['signup-courses'].value.split(',').map(c => c.trim());
@@ -156,7 +160,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Dynamic Page Loading Logic (index.html) ---
     const navLinks = document.querySelectorAll('.nav-link');
-
     if (mainContent) {
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
@@ -171,270 +174,246 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentHash = window.location.hash || '#dashboard';
         loadPage(currentHash);
     }
+});
 
-    // --- Dynamic Page Loading Functions ---
-    async function loadPage(page) {
-        // ... (Your loadPage function remains the same)
-        if (!mainContent) return;
-        mainContent.innerHTML = '';
+// --- Dynamic Page Loading Functions ---
+async function loadPage(page) {
+    const mainContent = document.getElementById('content');
+    if (!mainContent) return;
+    mainContent.innerHTML = '';
 
-        navLinks.forEach(link => link.classList.remove('active'));
-        const activeLink = document.querySelector(`.nav-link[href="${page}"]`);
-        if (activeLink) {
-            activeLink.classList.add('active');
-        }
-
-        switch (page) {
-            case '#dashboard':
-                await renderDashboard();
-                break;
-            case '#quests':
-                await renderQuests();
-                break;
-            case '#leaderboard':
-                await renderLeaderboard();
-                break;
-            case '#profile':
-                await renderProfile();
-                break;
-        }
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => link.classList.remove('active'));
+    const activeLink = document.querySelector(`.nav-link[href="${page}"]`);
+    if (activeLink) {
+        activeLink.classList.add('active');
     }
 
-    async function renderDashboard() {
-        const user = auth.currentUser;
-        if (!user) return;
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        const userData = userDoc.data();
-        const dashboardHtml = `
-            <div class="page-section">
-                <h2>Welcome, ${userData.name}!</h2>
-                <p>Your Current Points: <strong>${userData.points}</strong></p>
-                <div class="progress-bar-container">
-                    <div class="progress-bar" style="width: ${(userData.points / 1000) * 100}%;"></div>
-                </div>
-                <p><strong>Academic Year:</strong> ${userData.year}</p>
-            </div>
-            <div class="page-section" id="current-quests">
-                <h2>Current Quests</h2>
-            </div>
-            <div class="page-section" id="top-leaderboard">
-                <h2>Top 5 Leaderboard</h2>
-            </div>
-        `;
-        mainContent.innerHTML = dashboardHtml;
-        const questsSnapshot = await db.collection('quests').get();
-        let questsHtml = '<ul>';
-        questsSnapshot.forEach(doc => {
-            const quest = doc.data();
-            questsHtml += `<li>${quest.name} (+${quest.points} pts) - ${quest.description}</li>`;
-        });
-        questsHtml += '</ul>';
-        const currentQuestsEl = document.getElementById('current-quests');
-        if (currentQuestsEl) {
-            currentQuestsEl.innerHTML += questsHtml;
-        }
-        const leaderboardSnapshot = await db.collection('users').orderBy('points', 'desc').limit(5).get();
-        let leaderboardHtml = '<table><thead><tr><th>Rank</th><th>Name</th><th>Points</th></tr></thead><tbody>';
-        let rank = 1;
-        leaderboardSnapshot.forEach(doc => {
-            const student = doc.data();
-            leaderboardHtml += `<tr><td>${rank++}</td><td>${student.name}</td><td>${student.points}</td></tr>`;
-        });
-        leaderboardHtml += '</tbody></table>';
-        const topLeaderboardEl = document.getElementById('top-leaderboard');
-        if (topLeaderboardEl) {
-            topLeaderboardEl.innerHTML += leaderboardHtml;
-        }
+    switch (page) {
+        case '#dashboard':
+            await renderDashboard();
+            break;
+        case '#quests':
+            await renderQuests();
+            break;
+        case '#leaderboard':
+            await renderLeaderboard();
+            break;
+        case '#profile':
+            await renderProfile();
+            break;
     }
+}
 
-    async function renderQuests() {
-        const questsSnapshot = await db.collection('quests').get();
-        let questsHtml = `
-            <div class="page-section">
-                <h2>All Available Quests</h2>
-                <div id="quest-grid">
-        `;
-        questsSnapshot.forEach(doc => {
-            const quest = doc.data();
-            questsHtml += `
-                <div class="quest-card">
-                    <h3>${quest.name}</h3>
-                    <p>${quest.description}</p>
-                    <span class="points">+${quest.points} pts</span>
-                </div>
-            `;
-        });
+async function renderDashboard() {
+    const mainContent = document.getElementById('content');
+    const user = auth.currentUser;
+    if (!user) return;
+    const userDoc = await db.collection('users').doc(user.uid).get();
+    const userData = userDoc.data();
+    const dashboardHtml = `
+        <div class="page-section">
+            <h2>Welcome, ${userData.name}!</h2>
+            <p>Your Current Points: <strong>${userData.points}</strong></p>
+            <div class="progress-bar-container">
+                <div class="progress-bar" style="width: ${(userData.points / 1000) * 100}%;"></div>
+            </div>
+            <p><strong>Academic Year:</strong> ${userData.year}</p>
+        </div>
+        <div class="page-section" id="current-quests">
+            <h2>Current Quests</h2>
+        </div>
+        <div class="page-section" id="top-leaderboard">
+            <h2>Top 5 Leaderboard</h2>
+        </div>
+    `;
+    mainContent.innerHTML = dashboardHtml;
+    const questsSnapshot = await db.collection('quests').get();
+    let questsHtml = '<ul>';
+    questsSnapshot.forEach(doc => {
+        const quest = doc.data();
+        questsHtml += `<li>${quest.name} (+${quest.points} pts) - ${quest.description}</li>`;
+    });
+    questsHtml += '</ul>';
+    const currentQuestsEl = document.getElementById('current-quests');
+    if (currentQuestsEl) {
+        currentQuestsEl.innerHTML += questsHtml;
+    }
+    const leaderboardSnapshot = await db.collection('users').orderBy('points', 'desc').limit(5).get();
+    let leaderboardHtml = '<table><thead><tr><th>Rank</th><th>Name</th><th>Points</th></tr></thead><tbody>';
+    let rank = 1;
+    leaderboardSnapshot.forEach(doc => {
+        const student = doc.data();
+        leaderboardHtml += `<tr><td>${rank++}</td><td>${student.name}</td><td>${student.points}</td></tr>`;
+    });
+    leaderboardHtml += '</tbody></table>';
+    const topLeaderboardEl = document.getElementById('top-leaderboard');
+    if (topLeaderboardEl) {
+        topLeaderboardEl.innerHTML += leaderboardHtml;
+    }
+}
+
+async function renderQuests() {
+    const mainContent = document.getElementById('content');
+    const questsSnapshot = await db.collection('quests').get();
+    let questsHtml = `
+        <div class="page-section">
+            <h2>All Available Quests</h2>
+            <div id="quest-grid">
+    `;
+    questsSnapshot.forEach(doc => {
+        const quest = doc.data();
         questsHtml += `
-                </div>
+            <div class="quest-card">
+                <h3>${quest.name}</h3>
+                <p>${quest.description}</p>
+                <span class="points">+${quest.points} pts</span>
             </div>
         `;
-        if (mainContent) {
-            mainContent.innerHTML = questsHtml;
-        }
+    });
+    questsHtml += `
+            </div>
+        </div>
+    `;
+    if (mainContent) {
+        mainContent.innerHTML = questsHtml;
     }
+}
 
-    async function renderLeaderboard() {
-        const leaderboardSnapshot = await db.collection('users').orderBy('points', 'desc').get();
-        let leaderboardHtml = `
-            <div class="page-section">
-                <h2>Global Leaderboard</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Name</th>
-                            <th>University Year</th>
-                            <th>Points</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-        let rank = 1;
-        leaderboardSnapshot.forEach(doc => {
-            const student = doc.data();
-            leaderboardHtml += `
-                <tr>
-                    <td>${rank++}</td>
-                    <td>${student.name}</td>
-                    <td>${student.year}</td>
-                    <td>${student.points}</td>
-                </tr>
-            `;
-        });
+async function renderLeaderboard() {
+    const mainContent = document.getElementById('content');
+    const leaderboardSnapshot = await db.collection('users').orderBy('points', 'desc').get();
+    let leaderboardHtml = `
+        <div class="page-section">
+            <h2>Global Leaderboard</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Name</th>
+                        <th>University Year</th>
+                        <th>Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    let rank = 1;
+    leaderboardSnapshot.forEach(doc => {
+        const student = doc.data();
         leaderboardHtml += `
-                    </tbody>
-                </table>
-            </div>
-            <div class="page-section" id="badges-container">
-                <h2>Badges & Achievements</h2>
-            </div>
+            <tr>
+                <td>${rank++}</td>
+                <td>${student.name}</td>
+                <td>${student.year}</td>
+                <td>${student.points}</td>
+            </tr>
         `;
-        if (mainContent) {
-            mainContent.innerHTML = leaderboardHtml;
-        }
-        const user = auth.currentUser;
-        if (!user) return;
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        const badges = userDoc.data().badges;
-        let badgesHtml = '<ul>';
-        badges.forEach(badge => {
-            badgesHtml += `<li>${badge}</li>`;
-        });
-        badgesHtml += '</ul>';
-        const badgesContainerEl = document.getElementById('badges-container');
-        if (badgesContainerEl) {
-            badgesContainerEl.innerHTML += badgesHtml;
-        }
+    });
+    leaderboardHtml += `
+                </tbody>
+            </table>
+        </div>
+        <div class="page-section" id="badges-container">
+            <h2>Badges & Achievements</h2>
+        </div>
+    `;
+    if (mainContent) {
+        mainContent.innerHTML = leaderboardHtml;
     }
+    const user = auth.currentUser;
+    if (!user) return;
+    const userDoc = await db.collection('users').doc(user.uid).get();
+    const badges = userDoc.data().badges;
+    let badgesHtml = '<ul>';
+    badges.forEach(badge => {
+        badgesHtml += `<li>${badge}</li>`;
+    });
+    badgesHtml += '</ul>';
+    const badgesContainerEl = document.getElementById('badges-container');
+    if (badgesContainerEl) {
+        badgesContainerEl.innerHTML += badgesHtml;
+    }
+}
 
-    async function renderProfile() {
-        const user = auth.currentUser;
-        if (!user) return;
+async function renderProfile() {
+    const mainContent = document.getElementById('content');
+    const user = auth.currentUser;
+    if (!user) return;
 
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        const userData = userDoc.data();
+    const userDoc = await db.collection('users').doc(user.uid).get();
+    const userData = userDoc.data();
 
-        const profileHtml = `
-            <div class="page-section">
-                <h2>My Profile</h2>
-                <form id="edit-profile-form">
-                    <div class="form-group">
-                        <label for="profile-name">Full Name</label>
-                        <input type="text" id="profile-name" value="${userData.name}" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="profile-id">University ID</label>
-                        <input type="text" id="profile-id" value="${userData.universityId}" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="profile-email">Email</label>
-                        <input type="email" id="profile-email" value="${userData.email}" disabled>
-                    </div>
-                    <div class="form-group">
-                        <label for="profile-year">University Year</label>
-                        <select id="profile-year" required>
-                            <option value="Freshman" ${userData.year === 'Freshman' ? 'selected' : ''}>Freshman</option>
-                            <option value="Sophomore" ${userData.year === 'Sophomore' ? 'selected' : ''}>Sophomore</option>
-                            <option value="Junior" ${userData.year === 'Junior' ? 'selected' : ''}>Junior</option>
-                            <option value="Senior" ${userData.year === 'Senior' ? 'selected' : ''}>Senior</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="profile-courses">Courses (comma-separated)</label>
-                        <input type="text" id="profile-courses" value="${userData.courses.join(', ')}" required>
-                    </div>
-                    <button type="submit" class="btn">Save Changes</button>
-                </form>
-            </div>
-            <div class="page-section">
-                <h2>Activity Log</h2>
-                <ul id="activity-log">
-                    </ul>
-            </div>
-        `;
-        if (mainContent) {
-            mainContent.innerHTML = profileHtml;
-            document.getElementById('edit-profile-form').addEventListener('submit', async (e) => {
+    const profileHtml = `
+        <div class="page-section">
+            <h2>My Profile</h2>
+            <form id="edit-profile-form">
+                <div class="form-group">
+                    <label for="profile-name">Full Name</label>
+                    <input type="text" id="profile-name" value="${userData.name}" required>
+                </div>
+                <div class="form-group">
+                    <label for="profile-id">University ID</label>
+                    <input type="text" id="profile-id" value="${userData.universityId}" required>
+                </div>
+                <div class="form-group">
+                    <label for="profile-email">Email</label>
+                    <input type="email" id="profile-email" value="${userData.email}" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="profile-year">University Year</label>
+                    <select id="profile-year" required>
+                        <option value="Freshman" ${userData.year === 'Freshman' ? 'selected' : ''}>Freshman</option>
+                        <option value="Sophomore" ${userData.year === 'Sophomore' ? 'selected' : ''}>Sophomore</option>
+                        <option value="Junior" ${userData.year === 'Junior' ? 'selected' : ''}>Junior</option>
+                        <option value="Senior" ${userData.year === 'Senior' ? 'selected' : ''}>Senior</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="profile-courses">Courses (comma-separated)</label>
+                    <input type="text" id="profile-courses" value="${userData.courses.join(', ')}" required>
+                </div>
+                <button type="submit" class="btn">Save Changes</button>
+            </form>
+        </div>
+        <div class="page-section">
+            <h2>Activity Log</h2>
+            <ul id="activity-log">
+                </ul>
+        </div>
+    `;
+    if (mainContent) {
+        mainContent.innerHTML = profileHtml;
+        const editProfileForm = document.getElementById('edit-profile-form');
+        if (editProfileForm) {
+            editProfileForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 await updateProfile(user.uid);
             });
         }
     }
+}
 
-    async function updateProfile(userId) {
-        const name = document.getElementById('profile-name').value;
-        const id = document.getElementById('profile-id').value;
-        const year = document.getElementById('profile-year').value;
-        const courses = document.getElementById('profile-courses').value.split(',').map(c => c.trim());
+async function updateProfile(userId) {
+    const name = document.getElementById('profile-name').value;
+    const id = document.getElementById('profile-id').value;
+    const year = document.getElementById('profile-year').value;
+    const courses = document.getElementById('profile-courses').value.split(',').map(c => c.trim());
 
-        try {
-            await db.collection('users').doc(userId).update({
-                name: name,
-                universityId: id,
-                year: year,
-                courses: courses
-            });
-            alert('Profile updated successfully!');
-        } catch (error) {
-            console.error("Error updating profile: ", error);
-            alert('Failed to update profile.');
-        }
+    try {
+        await db.collection('users').doc(userId).update({
+            name: name,
+            universityId: id,
+            year: year,
+            courses: courses
+        });
+        alert('Profile updated successfully!');
+    } catch (error) {
+        console.error("Error updating profile: ", error);
+        alert('Failed to update profile.');
     }
-        if (mainContent) {
-            mainContent.innerHTML = profileHtml;
-        }
-        const profileBadgesListEl = document.getElementById('profile-badges-list');
-        if (profileBadgesListEl) {
-            let badgesHtml = '';
-            userData.badges.forEach(badge => {
-                badgesHtml += `<li>${badge}</li>`;
-            });
-            profileBadgesListEl.innerHTML = badgesHtml;
-        }
-        const editBtn = document.getElementById('edit-profile-btn');
-        const editSection = document.getElementById('edit-profile-section');
-        const editForm = document.getElementById('edit-profile-form');
-        if (editBtn && editSection) {
-            editBtn.addEventListener('click', () => {
-                editSection.style.display = 'block';
-            });
-        }
-        if (editForm) {
-            editForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const newYear = document.getElementById('edit-year').value;
-                await db.collection('users').doc(user.uid).update({ year: newYear });
-                alert('University year updated successfully!');
-                const currentYearEl = document.getElementById('current-year');
-                if (currentYearEl) {
-                    currentYearEl.textContent = newYear;
-                }
-                editSection.style.display = 'none';
-            });
-        }
-    }
+}
 
-    // --- Admin Panel Logic (for admin.html) ---
+// --- Admin Panel Logic (for admin.html) ---
 function loadAdminPanel() {
     const addQuestForm = document.getElementById('add-quest-form');
     const addBadgeForm = document.getElementById('add-badge-form');
