@@ -14,6 +14,13 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+// Get new login form and sections
+const loginForm = document.getElementById('login-form');
+const signupSection = document.getElementById('signup-section');
+const loginSection = document.getElementById('login-section');
+const showSignupLink = document.getElementById('show-signup-link');
+const showLoginLink = document.getElementById('show-login-link');
+
 // Global variables for DOM elements
 const mainContent = document.getElementById('content');
 const userEmailSpan = document.getElementById('user-email');
@@ -87,6 +94,37 @@ if (signupForm) {
         }
     });
 }
+
+
+// --- Login/Sign-up UI Toggles ---
+showSignupLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    loginSection.style.display = 'none';
+    signupSection.style.display = 'block';
+});
+
+showLoginLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    signupSection.style.display = 'none';
+    loginSection.style.display = 'block';
+});
+
+// --- Login Function ---
+if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = loginForm['login-email'].value;
+        const password = loginForm['login-password'].value;
+
+        try {
+            await auth.signInWithEmailAndPassword(email, password);
+            window.location.href = 'index.html'; // Redirect on successful login
+        } catch (error) {
+            alert(error.message);
+        }
+    });
+}
+
 
 // Log In
 // This is done implicitly by redirecting from sign-up.html
