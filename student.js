@@ -32,41 +32,35 @@ document.addEventListener('DOMContentLoaded', () => {
         loadPage(currentHash, user);
     }
 
-    async function loadPage(page, user) {
-        document.querySelectorAll('.page-content').forEach(section => {
-            section.style.display = 'none';
-        });
+async function loadPage(page, user) {
+    // De-activate all navigation links first
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
 
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.classList.remove('active');
-        });
-
-        const activeLink = document.querySelector(`.nav-link[href="${page}"]`);
-        if (activeLink) {
-            activeLink.classList.add('active');
-        }
-
-        const contentSectionId = page.substring(1) + '-content';
-        const contentSection = document.getElementById(contentSectionId);
-        if (contentSection) {
-            contentSection.style.display = 'block';
-        }
-
-        switch (page) {
-            case '#dashboard':
-                await renderDashboard(user);
-                break;
-            case '#quests':
-                await renderQuests(user);
-                break;
-            case '#leaderboard':
-                await renderLeaderboard(user);
-                break;
-            case '#profile':
-                await renderProfile(user);
-                break;
-        }
+    // Activate the correct link
+    const activeLink = document.querySelector(`.nav-link[href="${page}"]`);
+    if (activeLink) {
+        activeLink.classList.add('active');
     }
+
+    // Call the correct function to render the page content
+    switch (page) {
+        case '#quests':
+            await renderQuests(user);
+            break;
+        case '#leaderboard':
+            await renderLeaderboard(user);
+            break;
+        case '#profile':
+            await renderProfile(user);
+            break;
+        case '#dashboard':
+        default:
+            await renderDashboard(user);
+            break;
+    }
+}
 
 // Add or modify the renderDashboard function
 async function renderDashboard(user) {
