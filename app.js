@@ -1,330 +1,400 @@
-if (!window.FIREBASE_CONFIG || !window.FIREBASE_CONFIG.apiKey) {
-  alert("⚠️ Firebase not configured. Edit config.js");
-} else {
-  firebase.initializeApp(window.FIREBASE_CONFIG);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+// Your Firebase project configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyB-vArRoYuCqzIWT_b7xPV1Lt6Ev4T3Bsc",
+    authDomain: "academic-quest.firebaseapp.com",
+    projectId: "academic-quest",
+    storageBucket: "academic-quest.firebasestorage.app",
+    messagingSenderId: "44540247560",
+    appId: "1:44540247560:web:96e1d5bc34baf97e3b1bbd"
+};
 
-  // =============================
-  // 🔑 Default Admin Auto-Create
-  // =============================
-  async function ensureAdmin() {
-    try {
-      const methods = await auth.fetchSignInMethodsForEmail("admin@admin.com");
-      if (methods.length === 0) {
-        const secondary = firebase.initializeApp(window.FIREBASE_CONFIG, "secondary");
-        const sAuth = secondary.auth();
 
-        const cred = await sAuth.createUserWithEmailAndPassword("admin@admin.com", "123456");
-        await db.collection("users").doc(cred.user.uid).set({
-          name: "Administrator",
-          studentId: "ADMIN",
-          email: "admin@admin.com",
-          year: "Admin",
-          role: "admin",
-          points: 0,
-          badges: [],
-          quests: [],
-          activity: [
-            { msg: "Default admin created", ts: firebase.firestore.FieldValue.serverTimestamp() }
-          ]
-        });
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-        await sAuth.signOut();
-        await secondary.delete();
-        console.log("✅ Default admin created (secondary app, session preserved)");
-      }
-    } catch (e) {
-      console.log("Admin ensure error:", e.message);
-    }
-  }
-  ensureAdmin();
+// Global variables for DOM elements
+const mainContent = document.getElementById('content');
+const userEmailSpan = document.getElementById('user-email');
+const adminLinkContainer = document.getElementById('admin-link-container');
+const logoutBtn = document.getElementById('logout-btn');
+const adminLogoutBtn = document.getElementById('admin-logout-btn');
 
-  // =============================
-  // 🟢 Sign Up
-  // =============================
-  document.getElementById("signupForm").addEventListener("submit", async e => {
-    e.preventDefault();
-    const name = document.getElementById("suName").value;
-    const studentId = document.getElementById("suStudentId").value;
-    const email = document.getElementById("suEmail").value;
-    const pass = document.getElementById("suPass").value;
-    const pass2 = document.getElementById("suPass2").value;
-    const year = document.getElementById("suYear").value;
-    const courses = document.getElementById("suCourses").value.split(",").map(c => c.trim());
+const adminEmail = "admin@admin.com";
 
-    if (pass !== pass2) {
-      alert("Passwords do not match.");
-      return;
-    }
-
-    try {
-      const cred = await auth.createUserWithEmailAndPassword(email, pass);
-      await db.collection("users").doc(cred.user.uid).set({
-        name,
-        studentId,
-        email,
-        year,
-        role: "student",
-        points: 0,
-        badges: [],
-        courses,
-        quests: [],
-        activity: [
-          { msg: "Account created", ts: firebase.firestore.FieldValue.serverTimestamp() }
-        ]
-      });
-      alert("✅ Account created. Please login.");
-    } catch (err) {
-      alert("Signup error: " + err.message);
-    }
-  });
-
-  // =============================
-  // 🔵 Login
-  // =============================
-  document.getElementById("loginForm").addEventListener("submit", async e => {
-    e.preventDefault();
-    const email = document.getElementById("loginEmail").value;
-    const pass = document.getElementById("loginPass").value;
-    try {
-      await auth.signInWithEmailAndPassword(email, pass);
-    } catch (err) {
-      alert("Login error: " + err.message);
-    }
-  });
-
-  // =============================
-  // 🔴 Logout
-  // =============================
-  document.getElementById("logoutBtn").addEventListener("click", () => {
-    auth.signOut().then(() => location.reload());
-  });
-
-  // =============================
-  // 👤 Auth State Change
-  // =============================
-  auth.onAuthStateChanged(async user => {
+// --- Authentication Listeners ---
+auth.onAuthStateChanged(user => {
     if (user) {
-      document.getElementById("auth-section").classList.add("hidden");
-      document.getElementById("tab-dashboard").classList.remove("hidden");
-
-      db.collection("users").doc(user.uid).onSnapshot(doc => {
-        if (doc.exists) {
-          const u = doc.data();
-
-          // Show admin tab if role is admin
-          if (u.role === "admin") {
-            document.getElementById("admin-tab").style.display = "inline";
-          }
-
-          // Dashboard mini-info
-          document.getElementById("infoName").innerText = u.name || "—";
-          document.getElementById("infoId").innerText = u.studentId || "—";
-
-          // Render features
-          renderJourney(u.year || "Freshman");
-          renderLeaderboard();
-          renderDonut(u.breakdown || {});
-          renderQuests();   // ✅ safe call
-
-          // Profile page
-          document.getElementById("pfName").innerText = u.name || "—";
-          document.getElementById("pfId").innerText = u.studentId || "—";
-          document.getElementById("pfYear").innerText = u.year || "—";
-          document.getElementById("pfCourses").innerText = (u.courses || []).join(", ");
-          document.getElementById("pfPoints").innerText = u.points || 0;
-          document.getElementById("pfBadges").innerHTML = (u.badges || [])
-            .map(b => `<span class="badge">${b}</span>`).join(" ");
-          document.getElementById("activityLog").innerHTML = (u.activity || [])
-            .map(a => `<li>${a.msg}</li>`).join("");
-
-          // Prefill edit form
-          document.getElementById("editName").value = u.name || "";
-          document.getElementById("editId").value = u.studentId || "";
-          document.getElementById("editCourses").value = (u.courses || []).join(", ");
-          document.getElementById("editYear").value = u.year || "Freshman";
+        // User is logged in
+        if (window.location.pathname === '/sign-up.html') {
+            window.location.href = 'index.html'; // Redirect to main page
         }
-      });
+        
+        userEmailSpan.textContent = user.email;
+        if (user.email === adminEmail) {
+            adminLinkContainer.style.display = 'list-item';
+            // Specific logic for admin page
+            if (window.location.pathname === '/admin.html') {
+                loadAdminPanel();
+            }
+        } else {
+            adminLinkContainer.style.display = 'none';
+        }
+        
+        // Load default page content
+        const currentHash = window.location.hash || '#dashboard';
+        loadPage(currentHash);
+
     } else {
-      document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
-      document.getElementById("auth-section").classList.remove("hidden");
+        // No user is logged in
+        if (window.location.pathname !== '/sign-up.html') {
+            window.location.href = 'sign-up.html'; // Redirect to sign-up/login
+        }
     }
-  });
+});
 
-  // =============================
-  // 📌 Navigation Tabs
-  // =============================
-  document.querySelectorAll("[data-tab]").forEach(link => {
-    link.addEventListener("click", e => {
-      e.preventDefault();
-      const tab = link.getAttribute("data-tab");
+// --- Authentication Functions ---
 
-      document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
-      document.getElementById(`tab-${tab}`).classList.remove("hidden");
+// Sign Up
+const signupForm = document.getElementById('signup-form');
+if (signupForm) {
+    signupForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = signupForm['signup-email'].value;
+        const password = signupForm['signup-password'].value;
+        const name = signupForm['signup-name'].value;
+        const id = signupForm['signup-id'].value;
+        const courses = signupForm['signup-courses'].value.split(',').map(c => c.trim());
+        const year = signupForm['student-year'].value;
+
+        try {
+            const res = await auth.createUserWithEmailAndPassword(email, password);
+            await db.collection('users').doc(res.user.uid).set({
+                name: name,
+                universityId: id,
+                email: email,
+                courses: courses,
+                year: year,
+                points: 0,
+                badges: [],
+                questsCompleted: []
+            });
+            alert('Account created successfully! Redirecting to dashboard...');
+            window.location.href = 'index.html';
+        } catch (error) {
+            alert(error.message);
+        }
     });
-  });
-
-  // =============================
-  // 📊 Academic Journey
-  // =============================
-  function renderJourney(currentYear) {
-    const levels = ["Freshman","Second Year","Third Year","Final Year"];
-    let html = "";
-    levels.forEach(l => {
-      html += `<span class="step ${l === currentYear ? "active":""}">${l}</span>`;
-    });
-    document.getElementById("journey").innerHTML = html;
-    document.getElementById("journeyLevel").innerText = "Current Year: " + currentYear;
-  }
-
-  // =============================
-  // 🏆 Leaderboard
-  // =============================
-  async function renderLeaderboard() {
-    const snap = await db.collection("users").orderBy("points","desc").get();
-    let rows = "", i = 1, top5 = "";
-    snap.forEach(doc => {
-      const d = doc.data();
-      rows += `<tr><td>${i}</td><td>${d.name || d.email}</td><td>${d.year || ""}</td><td>${d.points || 0}</td></tr>`;
-      if (i <= 5) {
-        top5 += `<li>${d.name || d.email} - ${d.points || 0} pts</li>`;
-      }
-      i++;
-    });
-    document.getElementById("lbTable").innerHTML = rows;
-    document.getElementById("top5").innerHTML = top5;
-  }
-
-  // =============================
-  // 📋 Render Quests (Dashboard + Quests page)
-  // =============================
-  async function renderQuests() {
-    const snap = await db.collection("quests").orderBy("createdAt", "desc").get();
-
-    // Dashboard list
-    const ul = document.getElementById("currentQuests");
-    ul.innerHTML = "";
-    snap.forEach(doc => {
-      const q = doc.data();
-      const li = document.createElement("li");
-      li.textContent = `${q.title} (+${q.pts})`;
-      ul.appendChild(li);
-    });
-
-    // Quests page grid
-    const grid = document.getElementById("questGrid");
-    grid.innerHTML = "";
-    snap.forEach(doc => {
-      const q = doc.data();
-      const card = document.createElement("div");
-      card.className = "quest-card";
-      card.innerHTML = `
-        <div class="q-title">${q.title}</div>
-        <div class="q-pts">+${q.pts} pts</div>
-      `;
-      grid.appendChild(card);
-    });
-  }
-
-  // =============================
-  // ➕ Admin: Quests & Badges
-  // =============================
-  window.addQuest = async function() {
-    const title = document.getElementById("adminQuestTitle").value.trim();
-    const pts = parseInt(document.getElementById("adminQuestPts").value) || 0;
-    if (!title) return alert("Enter a quest title.");
-    await db.collection("quests").add({
-      title, pts, createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    alert("Quest added ✅");
-    renderQuests();
-  };
-
-  window.addBadge = async function() {
-    const id = document.getElementById("adminBadgeId").value.trim();
-    const label = document.getElementById("adminBadgeLabel").value.trim();
-    if (!id || !label) return alert("Enter badge id and label.");
-    await db.collection("badges").doc(id).set({
-      id, label, createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    alert("Badge added ✅");
-  };
-
-  // =============================
-  // ✏️ Profile Update (Year only for now)
-  // =============================
-  window.updateYear = async function() {
-    const year = document.getElementById("editYear").value;
-    await db.collection("users").doc(auth.currentUser.uid).update({ year });
-    renderJourney(year);
-    alert("Academic year updated to " + year);
-  };
-
-  // =============================
-  // 💾 Save Profile
-  // =============================
-  document.getElementById("saveProfile").addEventListener("click", async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const name = document.getElementById("editName").value.trim();
-    const studentId = document.getElementById("editId").value.trim();
-    const courses = document.getElementById("editCourses").value
-      .split(",").map(c => c.trim()).filter(Boolean);
-    const year = document.getElementById("editYear").value;
-
-    await db.collection("users").doc(user.uid).set({
-      name,
-      studentId,
-      courses,
-      year,
-      activity: firebase.firestore.FieldValue.arrayUnion({
-        msg: "Profile updated (name/id/courses/year)",
-        ts: firebase.firestore.FieldValue.serverTimestamp()
-      })
-    }, { merge: true });
-
-    renderJourney(year);
-    alert("Profile saved ✅");
-  });
 }
 
-// =============================
-// 🍩 Donut Chart
-// =============================
-function renderDonut(breakdown) {
-  const canvas = document.getElementById("donut");
-  if (!canvas) return;
+// Log In
+// This is done implicitly by redirecting from sign-up.html
+// and `auth.onAuthStateChanged` handler. A separate login form can be added.
 
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+// Logout
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+        auth.signOut().then(() => {
+            window.location.href = 'sign-up.html';
+        });
+    });
+}
+if (adminLogoutBtn) {
+    adminLogoutBtn.addEventListener('click', () => {
+        auth.signOut().then(() => {
+            window.location.href = 'sign-up.html';
+        });
+    });
+}
 
-  const data = {
-    assignments: breakdown.assignments || 0,
-    exams: breakdown.exams || 0,
-    attendance: breakdown.attendance || 0,
-    other: breakdown.other || 0
-  };
+// --- Dynamic Page Loading ---
 
-  const total = Object.values(data).reduce((a, b) => a + b, 0) || 1;
+const navLinks = document.querySelectorAll('.nav-link');
+navLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = e.target.getAttribute('href');
+        history.pushState(null, '', target);
+        loadPage(target);
+    });
+});
 
-  const colors = ["#2563eb", "#16a34a", "#f59e0b", "#9ca3af"];
-  const values = Object.values(data);
-  let start = 0;
+async function loadPage(page) {
+    // Reset active class on nav links
+    navLinks.forEach(link => link.classList.remove('active'));
+    document.querySelector(`[href="${page}"]`).classList.add('active');
 
-  values.forEach((val, i) => {
-    const slice = (val / total) * Math.PI * 2;
-    ctx.beginPath();
-    ctx.moveTo(canvas.width / 2, canvas.height / 2);
-    ctx.arc(canvas.width / 2, canvas.height / 2, 90, start, start + slice);
-    ctx.fillStyle = colors[i];
-    ctx.fill();
-    start += slice;
-  });
+    mainContent.innerHTML = ''; // Clear content
 
-  ctx.beginPath();
-  ctx.arc(canvas.width / 2, canvas.height / 2, 50, 0, Math.PI * 2);
-  ctx.fillStyle = "#fff";
-  ctx.fill();
+    switch(page) {
+        case '#dashboard':
+            await renderDashboard();
+            break;
+        case '#quests':
+            await renderQuests();
+            break;
+        case '#leaderboard':
+            await renderLeaderboard();
+            break;
+        case '#profile':
+            await renderProfile();
+            break;
+    }
+}
+
+// --- Render Functions ---
+
+async function renderDashboard() {
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    const userDoc = await db.collection('users').doc(user.uid).get();
+    const userData = userDoc.data();
+
+    const dashboardHtml = `
+        <div class="page-section">
+            <h2>Welcome, ${userData.name}!</h2>
+            <p>Your Current Points: <strong>${userData.points}</strong></p>
+            <div class="progress-bar-container">
+                <div class="progress-bar" style="width: ${(userData.points / 1000) * 100}%;"></div>
+            </div>
+            <p><strong>Academic Year:</strong> ${userData.year}</p>
+        </div>
+        <div class="page-section" id="current-quests">
+            <h2>Current Quests</h2>
+            </div>
+        <div class="page-section" id="top-leaderboard">
+            <h2>Top 5 Leaderboard</h2>
+            </div>
+    `;
+    mainContent.innerHTML = dashboardHtml;
+    
+    // Fetch and display quests
+    const questsSnapshot = await db.collection('quests').get();
+    let questsHtml = '<ul>';
+    questsSnapshot.forEach(doc => {
+        const quest = doc.data();
+        questsHtml += `<li>${quest.name} (+${quest.points} pts) - ${quest.description}</li>`;
+    });
+    questsHtml += '</ul>';
+    document.getElementById('current-quests').innerHTML += questsHtml;
+    
+    // Fetch and display top 5 leaderboard
+    const leaderboardSnapshot = await db.collection('users').orderBy('points', 'desc').limit(5).get();
+    let leaderboardHtml = '<table><thead><tr><th>Rank</th><th>Name</th><th>Points</th></tr></thead><tbody>';
+    let rank = 1;
+    leaderboardSnapshot.forEach(doc => {
+        const student = doc.data();
+        leaderboardHtml += `<tr><td>${rank++}</td><td>${student.name}</td><td>${student.points}</td></tr>`;
+    });
+    leaderboardHtml += '</tbody></table>';
+    document.getElementById('top-leaderboard').innerHTML += leaderboardHtml;
+}
+
+async function renderQuests() {
+    const questsSnapshot = await db.collection('quests').get();
+    let questsHtml = `
+        <div class="page-section">
+            <h2>All Available Quests</h2>
+            <div id="quest-grid">
+    `;
+    questsSnapshot.forEach(doc => {
+        const quest = doc.data();
+        questsHtml += `
+            <div class="quest-card">
+                <h3>${quest.name}</h3>
+                <p>${quest.description}</p>
+                <span class="points">+${quest.points} pts</span>
+            </div>
+        `;
+    });
+    questsHtml += `
+            </div>
+        </div>
+    `;
+    mainContent.innerHTML = questsHtml;
+}
+
+async function renderLeaderboard() {
+    const leaderboardSnapshot = await db.collection('users').orderBy('points', 'desc').get();
+    let leaderboardHtml = `
+        <div class="page-section">
+            <h2>Global Leaderboard</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Name</th>
+                        <th>University Year</th>
+                        <th>Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    let rank = 1;
+    leaderboardSnapshot.forEach(doc => {
+        const student = doc.data();
+        leaderboardHtml += `
+            <tr>
+                <td>${rank++}</td>
+                <td>${student.name}</td>
+                <td>${student.year}</td>
+                <td>${student.points}</td>
+            </tr>
+        `;
+    });
+    leaderboardHtml += `
+                </tbody>
+            </table>
+        </div>
+        <div class="page-section" id="badges-container">
+            <h2>Badges & Achievements</h2>
+            </div>
+    `;
+    mainContent.innerHTML = leaderboardHtml;
+
+    // Optional: Fetch and display badges for the current user
+    const user = auth.currentUser;
+    const userDoc = await db.collection('users').doc(user.uid).get();
+    const badges = userDoc.data().badges;
+    let badgesHtml = '<ul>';
+    badges.forEach(badge => {
+        badgesHtml += `<li>${badge}</li>`; // Assuming badge name is stored
+    });
+    badgesHtml += '</ul>';
+    document.getElementById('badges-container').innerHTML += badgesHtml;
+}
+
+async function renderProfile() {
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    const userDoc = await db.collection('users').doc(user.uid).get();
+    const userData = userDoc.data();
+
+    const profileHtml = `
+        <div class="page-section">
+            <h2>My Profile</h2>
+            <p><strong>Name:</strong> ${userData.name}</p>
+            <p><strong>University ID:</strong> ${userData.universityId}</p>
+            <p><strong>Email:</strong> ${userData.email}</p>
+            <p><strong>Courses:</strong> ${userData.courses.join(', ')}</p>
+            <p><strong>University Year:</strong> <span id="current-year">${userData.year}</span></p>
+            <button id="edit-profile-btn">Edit Profile</button>
+        </div>
+        
+        <div class="page-section" id="edit-profile-section" style="display:none;">
+            <h3>Edit My Profile</h3>
+            <form id="edit-profile-form">
+                <label for="edit-year">Change University Year:</label>
+                <select id="edit-year" required>
+                    <option value="Freshman" ${userData.year === 'Freshman' ? 'selected' : ''}>Freshman</option>
+                    <option value="Sophomore" ${userData.year === 'Sophomore' ? 'selected' : ''}>Sophomore</option>
+                    <option value="Junior" ${userData.year === 'Junior' ? 'selected' : ''}>Junior</option>
+                    <option value="Senior" ${userData.year === 'Senior' ? 'selected' : ''}>Senior</option>
+                </select>
+                <button type="submit">Save Changes</button>
+            </form>
+        </div>
+        
+        <div class="page-section">
+            <h3>My Badges</h3>
+            <ul id="profile-badges-list">
+                </ul>
+        </div>
+    `;
+    mainContent.innerHTML = profileHtml;
+
+    // Handle edit profile functionality
+    const editBtn = document.getElementById('edit-profile-btn');
+    const editSection = document.getElementById('edit-profile-section');
+    editBtn.addEventListener('click', () => {
+        editSection.style.display = 'block';
+    });
+    
+    const editForm = document.getElementById('edit-profile-form');
+    editForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newYear = document.getElementById('edit-year').value;
+        await db.collection('users').doc(user.uid).update({ year: newYear });
+        alert('University year updated successfully!');
+        document.getElementById('current-year').textContent = newYear;
+        editSection.style.display = 'none';
+    });
+}
+
+// --- Admin Panel Logic (for admin.html) ---
+
+function loadAdminPanel() {
+    const addQuestForm = document.getElementById('add-quest-form');
+    const addBadgeForm = document.getElementById('add-badge-form');
+    const questList = document.getElementById('quest-list');
+    const badgeList = document.getElementById('badge-list');
+
+    // Add Quest
+    addQuestForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = addQuestForm['quest-name'].value;
+        const points = parseInt(addQuestForm['quest-points'].value);
+        const type = addQuestForm['quest-type'].value;
+        const description = addQuestForm['quest-description'].value;
+        await db.collection('quests').add({ name, points, type, description });
+        alert('Quest added!');
+        addQuestForm.reset();
+        displayQuests();
+    });
+
+    // Add Badge
+    addBadgeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = addBadgeForm['badge-name'].value;
+        const description = addBadgeForm['badge-description'].value;
+        await db.collection('badges').add({ name, description });
+        alert('Badge added!');
+        addBadgeForm.reset();
+        displayBadges();
+    });
+
+    // Display Quests
+    async function displayQuests() {
+        questList.innerHTML = '';
+        const snapshot = await db.collection('quests').get();
+        snapshot.forEach(doc => {
+            const quest = doc.data();
+            const li = document.createElement('li');
+            li.innerHTML = `${quest.name} (+${quest.points} pts) <button class="delete-btn" data-id="${doc.id}">Delete</button>`;
+            questList.appendChild(li);
+        });
+    }
+
+    // Display Badges
+    async function displayBadges() {
+        badgeList.innerHTML = '';
+        const snapshot = await db.collection('badges').get();
+        snapshot.forEach(doc => {
+            const badge = doc.data();
+            const li = document.createElement('li');
+            li.innerHTML = `${badge.name} <button class="delete-btn" data-id="${doc.id}">Delete</button>`;
+            badgeList.appendChild(li);
+        });
+    }
+
+    // Delete functionality
+    document.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('delete-btn')) {
+            const docId = e.target.dataset.id;
+            const collectionName = e.target.closest('ul').id === 'quest-list' ? 'quests' : 'badges';
+            await db.collection(collectionName).doc(docId).delete();
+            alert('Item deleted!');
+            if (collectionName === 'quests') {
+                displayQuests();
+            } else {
+                displayBadges();
+            }
+        }
+    });
+
+    displayQuests();
+    displayBadges();
 }
