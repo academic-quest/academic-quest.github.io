@@ -25,18 +25,19 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Add Quest
-        addQuestForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = addQuestForm['quest-name'].value;
-            const points = parseInt(addQuestForm['quest-points'].value);
-            const type = addQuestForm['quest-type'].value;
-            const description = addQuestForm['quest-description'].value;
-            await db.collection('quests').add({ name, points, type, description });
-            alert('Quest added!');
-            addQuestForm.reset();
-            displayQuests();
-        });
+// Modify the Add Quest form listener
+addQuestForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = addQuestForm['quest-name'].value;
+    const points = parseInt(addQuestForm['quest-points'].value);
+    const type = addQuestForm['quest-type'].value;
+    const deadline = new Date(addQuestForm['quest-deadline'].value).toISOString(); // Store as ISO string
+    const description = addQuestForm['quest-description'].value;
+    await db.collection('quests').add({ name, points, type, description, deadline });
+    alert('Quest added!');
+    addQuestForm.reset();
+    displayQuests();
+});
 
         // Add Badge
         addBadgeForm.addEventListener('submit', async (e) => {
