@@ -88,6 +88,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+async function renderDashboard(user) {
+    const mainContent = document.getElementById('content');
+    const userDoc = await db.collection('users').doc(user.uid).get();
+    const userData = userDoc.data();
+    const points = userData.points || 0;
+    const level = calculateLevel(points);
+
+    mainContent.innerHTML = `
+        <div class="dashboard-container">
+            <h2>Welcome, ${userData.name}!</h2>
+            <div class="stats-card">
+                <div class="stat-item">
+                    <h3>Total Points</h3>
+                    <p>${points}</p>
+                </div>
+                <div class="stat-item">
+                    <h3>Current Level</h3>
+                    <p>${level}</p>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: ${(points % 100)}%;"></div>
+            </div>
+            <p>${100 - (points % 100)} points to the next level!</p>
+            <h3>Recent Activity</h3>
+            <ul id="activity-log-list"></ul>
+        </div>
+    `;
+
+    // A separate function to render the activity log
+    await renderActivityLog(user);
+}
+
+
+    
     async function renderQuestsOverview(user) {
         const questList = document.getElementById('quests-overview-list');
         questList.innerHTML = '<li>Loading...</li>';
