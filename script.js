@@ -24,40 +24,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- General Auth Listener ---
     auth.onAuthStateChanged(user => {
-        if (user) {
-            // User is logged in
-            if (window.location.pathname.endsWith('sign-up.html') || window.location.pathname === '/') {
-                window.location.href = 'index.html';
-            }
-            
-            userEmailSpan.textContent = user.email;
-           if (user.email === adminEmail) {
+auth.onAuthStateChanged(user => {
+    if (user) {
+        // User is logged in
+        if (window.location.pathname.endsWith('sign-up.html')) {
+            window.location.href = 'index.html';
+        }
+
+        // Handle Admin vs. Student logic
+        if (user.email === adminEmail) {
             if (adminLinkContainer) {
                 adminLinkContainer.style.display = 'list-item';
             }
-            // Add this specific check
+            // If the user is on the admin page, load the admin panel
             if (window.location.pathname.endsWith('admin.html')) {
                 loadAdminPanel();
-            }
-        } else {
-            if (adminLinkContainer) {
-                adminLinkContainer.style.display = 'none';
-            }
-        }
-
-            // Load page content for index.html
-            if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/') {
+            } else {
+                // If admin is on a student page, load student content
                 const currentHash = window.location.hash || '#dashboard';
                 loadPage(currentHash);
             }
-
         } else {
-            // No user is logged in
-            if (!window.location.pathname.endsWith('sign-up.html')) {
-                window.location.href = 'sign-up.html';
+            // User is a regular student
+            if (adminLinkContainer) {
+                adminLinkContainer.style.display = 'none';
             }
+            // Load student page content
+            const currentHash = window.location.hash || '#dashboard';
+            loadPage(currentHash);
         }
-    });
+
+    } else {
+        // No user is logged in
+        if (!window.location.pathname.endsWith('sign-up.html')) {
+            window.location.href = 'sign-up.html';
+        }
+    }
+});
+
 
     // --- Login and Sign-up Page Logic (sign-up.html) ---
     const signupForm = document.getElementById('signup-form');
@@ -167,9 +171,3 @@ async function loadPage(page) {
         // ... (All your render functions remain the same)
         // ... (All your admin panel functions remain the same)
     }
-
-    // Call loadAdminPanel if on the admin page
-    if (window.location.pathname.endsWith('admin.html')) {
-        loadAdminPanel();
-    }
-});
