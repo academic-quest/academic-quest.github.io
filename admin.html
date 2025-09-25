@@ -1,145 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>ACADEMIC QUEST</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="styles.css">
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
 </head>
-<body>
-  <!-- Navbar -->
-  <header class="nav">
-    <div class="nav-left">
-      <div class="brand-mark">AQ</div>
-      <div class="brand-text">ACADEMIC QUEST</div>
+<body class="admin-page">
+    <div class="admin-container">
+        <h2>Admin Panel</h2>
+        <div class="admin-section">
+            <h3>Add New Quest</h3>
+            <form id="add-quest-form">
+                <input type="text" id="quest-name" placeholder="Quest Name" required>
+                <input type="number" id="quest-points" placeholder="Points" required>
+                <input type="text" id="quest-type" placeholder="Type (e.g., Attendance)" required>
+                <textarea id="quest-description" placeholder="Description" required></textarea>
+                <button type="submit">Add Quest</button>
+            </form>
+        </div>
+        
+        <div class="admin-section">
+            <h3>Manage Quests</h3>
+            <ul id="quest-list">
+                </ul>
+        </div>
+        
+        <div class="admin-section">
+            <h3>Add New Badge</h3>
+            <form id="add-badge-form">
+                <input type="text" id="badge-name" placeholder="Badge Name" required>
+                <input type="text" id="badge-description" placeholder="Description" required>
+                <button type="submit">Add Badge</button>
+            </form>
+        </div>
+        
+        <div class="admin-section">
+            <h3>Manage Badges</h3>
+            <ul id="badge-list">
+                </ul>
+        </div>
+        
+        <button id="admin-logout-btn">Logout</button>
     </div>
-    <nav class="nav-links">
-      <a href="#" data-tab="dashboard">Dashboard</a>
-      <a href="#" data-tab="quests">Quests</a>
-      <a href="#" data-tab="leaderboard">Leaderboard</a>
-      <a href="#" data-tab="profile">Profile</a>
-      <a href="#" id="admin-tab" data-tab="admin" style="display:none;">Admin</a>
-      <button class="link-btn" id="logoutBtn" style="display:none;">Logout</button>
-    </nav>
-  </header>
-
-  <!-- Auth -->
-  <section id="auth" class="auth-wrap">
-    <div class="auth-card">
-      <h2>Login</h2>
-      <input id="loginEmail" type="email" placeholder="Email">
-      <input id="loginPass" type="password" placeholder="Password">
-      <button onclick="login()">Login</button>
-      <hr>
-      <h2>Sign Up</h2>
-      <input id="suName" placeholder="Full Name">
-      <input id="suStudentId" placeholder="Student ID">
-      <input id="suEmail" type="email" placeholder="Email">
-      <input id="suPass" type="password" placeholder="Password">
-      <label>Year:</label>
-      <select id="suYear">
-        <option>Freshman</option>
-        <option>Second Year</option>
-        <option>Third Year</option>
-        <option>Final Year</option>
-      </select>
-      <button onclick="signup()">Create Account</button>
-    </div>
-  </section>
-
-  <!-- Dashboard -->
-  <main id="app" class="hidden">
-    <section id="tab-dashboard" class="page">
-      <div class="dash-grid">
-        <aside class="card profile-panel">
-          <div class="avatar"></div>
-          <div class="kv"><span class="k">Group</span><span class="v">Academic Quest</span></div>
-          <div class="kv"><span class="k">User</span><span id="infoName" class="v">—</span></div>
-          <div class="kv"><span class="k">University ID</span><span id="infoId" class="v">—</span></div>
-        </aside>
-
-        <section class="card quests-card">
-          <h3>Current Quests</h3>
-          <ul id="currentQuests" class="quest-list"></ul>
-        </section>
-
-        <aside class="right-col">
-          <section class="card">
-            <h3>Leaderboard – Top 5</h3>
-            <ol id="top5" class="top5"></ol>
-          </section>
-          <section class="card">
-            <h3>Points Breakdown</h3>
-            <canvas id="donut" width="200" height="200"></canvas>
-          </section>
-        </aside>
-
-        <section class="card journey-card">
-          <h3>Academic Journey</h3>
-          <div id="journey" class="journey"></div>
-          <div id="journeyLevel" class="muted"></div>
-        </section>
-      </div>
-    </section>
-
-    <!-- Quests -->
-    <section id="tab-quests" class="page hidden">
-      <h2>All Quests</h2>
-      <div id="questGrid"></div>
-    </section>
-
-    <!-- Leaderboard -->
-    <section id="tab-leaderboard" class="page hidden">
-      <h2>Leaderboard</h2>
-      <table>
-        <thead><tr><th>#</th><th>Name</th><th>Year</th><th>Points</th></tr></thead>
-        <tbody id="lbTable"></tbody>
-      </table>
-    </section>
-
-    <!-- Profile -->
-    <section id="tab-profile" class="page hidden">
-      <h2>Profile</h2>
-      <p>Name: <span id="pfName"></span></p>
-      <p>University ID: <span id="pfId"></span></p>
-      <p>Year: <span id="pfYear"></span></p>
-      <label>Edit Year:</label>
-      <select id="editYear" onchange="updateYear()">
-        <option>Freshman</option>
-        <option>Second Year</option>
-        <option>Third Year</option>
-        <option>Final Year</option>
-      </select>
-      <h3>Badges</h3>
-      <div id="pfBadges"></div>
-      <h3>Activity Log</h3>
-      <ul id="activityLog"></ul>
-    </section>
-
-    <!-- Admin -->
-    <section id="tab-admin" class="page hidden">
-      <h2>Admin Panel</h2>
-      <h3>Add Quest</h3>
-      <input id="adminQuestTitle" placeholder="Quest Title">
-      <input id="adminQuestPts" type="number" placeholder="Points">
-      <button onclick="addQuest()">Add Quest</button>
-      <h3>Add Badge</h3>
-      <input id="adminBadgeId" placeholder="Badge ID">
-      <input id="adminBadgeLabel" placeholder="Badge Label">
-      <button onclick="addBadge()">Add Badge</button>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <span>Academic Quest © 2025 — Rangsit University</span>
-    <div><a>About</a> · <a>Contact</a> · <a>Support</a></div>
-  </footer>
-
-  <script src="app.js"></script>
+    
+    <script src="script.js"></script>
 </body>
 </html>
