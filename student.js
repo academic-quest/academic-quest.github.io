@@ -68,26 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function renderDashboard(user) {
-        try {
-            const userDoc = await db.collection('users').doc(user.uid).get();
-            if (userDoc.exists) {
-                const userData = userDoc.data();
-                document.getElementById('student-name').textContent = userData.name || 'N/A';
-                document.getElementById('student-id').textContent = `ID: ${userData.universityId || 'N/A'}`;
-                document.getElementById('student-year').textContent = `University Year: ${userData.year || 'N/A'}`;
-                document.getElementById('user-points').textContent = userData.points || 0;
-                document.getElementById('user-level').textContent = calculateLevel(userData.points || 0);
-
-                await renderQuestsOverview(user);
-                await renderLeaderboardOverview();
-                await renderPointsBreakdown(user);
-            }
-        } catch (error) {
-            console.error("Error rendering dashboard: ", error);
-        }
-    }
-
 async function renderDashboard(user) {
     const mainContent = document.getElementById('content');
     const userDoc = await db.collection('users').doc(user.uid).get();
@@ -212,49 +192,6 @@ async function renderDashboard(user) {
         }
     }
 
-    async function renderQuests(user) {
-        const questList = document.getElementById('quest-list');
-        questList.innerHTML = '<li>Loading...</li>';
-        try {
-            const questsSnapshot = await db.collection('quests').get();
-            const completedQuestsSnapshot = await db.collection('completedQuests').where('userId', '==', user.uid).get();
-            const completedQuests = new Set(completedQuestsSnapshot.docs.map(doc => doc.data().questId));
-
-            questList.innerHTML = '';
-            if (!questsSnapshot.empty) {
-                questsSnapshot.forEach(doc => {
-                    const quest = doc.data();
-                    const isCompleted = completedQuests.has(doc.id);
-                    const li = document.createElement('li');
-                    li.classList.add('quest-card');
-                    li.innerHTML = `
-                        <div class="quest-header">
-                            <h3>${quest.name}</h3>
-                            <span class="quest-points">+${quest.points} pts</span>
-                        </div>
-                        <p class="quest-description">${quest.description}</p>
-                        <button class="complete-btn" data-id="${doc.id}" data-points="${quest.points}" ${isCompleted ? 'disabled' : ''}>
-                            ${isCompleted ? 'Completed' : 'Complete Quest'}
-                        </button>
-                    `;
-                    questList.appendChild(li);
-                });
-                
-                // Add event listeners for quest completion
-                document.querySelectorAll('.complete-btn').forEach(button => {
-                    button.addEventListener('click', async (e) => {
-                        const questId = e.target.dataset.id;
-                        const points = parseInt(e.target.dataset.points);
-                        await completeQuest(user.uid, questId, points);
-                    });
-                });
-            } else {
-                questList.innerHTML = '<p>No quests available at the moment.</p>';
-            }
-        } catch (error) {
-            console.error("Error rendering quests: ", error);
-        }
-    }
 
 async function renderQuests(user) {
     const mainContent = document.getElementById('content');
