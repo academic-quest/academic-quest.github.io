@@ -12,36 +12,23 @@
 <body class="admin-page">
     <div class="admin-container">
         <h2>Admin Panel</h2>
-<div class="admin-section">
-    <h3>Add New Quest</h3>
-    <form id="add-quest-form">
-        <input type="text" id="quest-name" placeholder="Quest Name" required>
-        <input type="number" id="quest-points" placeholder="Points" required>
-        <input type="text" id="quest-type" placeholder="Type (e.g., Attendance)" required>
-        <input type="datetime-local" id="quest-deadline" placeholder="Deadline" required>
-        <textarea id="quest-description" placeholder="Description" required></textarea>
-        <button type="submit">Add Quest</button>
-    </form>
-</div>
         
         <div class="admin-section">
-            <h3>Manage Quests</h3>
-            <ul id="quest-list">
-                </ul>
-        </div>
-        
-        <div class="admin-section">
-            <h3>Add New Badge</h3>
-            <form id="add-badge-form">
-                <input type="text" id="badge-name" placeholder="Badge Name" required>
-                <input type="text" id="badge-description" placeholder="Description" required>
-                <button type="submit">Add Badge</button>
+            <h3>Add New Quest</h3>
+            <form id="add-quest-form">
+                <input type="text" id="quest-name" placeholder="Quest Name" required>
+                <input type="number" id="quest-points" placeholder="Points" required>
+                <input type="text" id="quest-type" placeholder="Type (e.g., Attendance)" required>
+                <input type="datetime-local" id="quest-deadline" placeholder="Deadline" required>
+                <textarea id="quest-description" placeholder="Description" required></textarea>
+                <input type="text" id="quest-badge" placeholder="Badge to Award (e.g., 'First Quest')">
+                <button type="submit">Add Quest</button>
             </form>
         </div>
         
         <div class="admin-section">
-            <h3>Manage Badges</h3>
-            <ul id="badge-list">
+            <h3>Manage Quests</h3>
+            <ul id="quest-list">
                 </ul>
         </div>
         
