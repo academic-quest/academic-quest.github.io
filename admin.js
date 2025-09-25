@@ -31,9 +31,25 @@ addQuestForm.addEventListener('submit', async (e) => {
     const name = addQuestForm['quest-name'].value;
     const points = parseInt(addQuestForm['quest-points'].value);
     const type = addQuestForm['quest-type'].value;
-    const deadline = new Date(addQuestForm['quest-deadline'].value).toISOString(); // Store as ISO string
+    const deadline = new Date(addQuestForm['quest-deadline'].value).toISOString();
     const description = addQuestForm['quest-description'].value;
-    await db.collection('quests').add({ name, points, type, description, deadline });
+    const badge = addQuestForm['quest-badge'].value; // Get the badge name
+
+    const questData = {
+        name,
+        points,
+        type,
+        description,
+        deadline
+    };
+
+    // Only add the badge field if a badge name was provided
+    if (badge) {
+        questData.badge = badge;
+    }
+
+    await db.collection('quests').add(questData);
+
     alert('Quest added!');
     addQuestForm.reset();
     displayQuests();
