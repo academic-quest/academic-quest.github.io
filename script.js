@@ -161,21 +161,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Admin Panel Logic (admin.html) ---
-    if (window.location.pathname.endsWith('admin.html')) {
-        auth.onAuthStateChanged(user => {
-            if (user && user.email === adminEmail) {
-                loadAdminPanel();
-            } else {
-                // Redirect non-admin users away from the admin page
-                if (!user) {
-                    window.location.href = 'sign-up.html';
-                } else {
-                    window.location.href = 'index.html';
-                }
-            }
-        });
+if (window.location.pathname.endsWith('admin.html')) {
+    // Check for a logged-in user right away
+    const user = auth.currentUser;
+    if (user && user.email === adminEmail) {
+        loadAdminPanel();
+    } else {
+        // Redirect non-admin users if the initial check fails
+        if (!user) {
+            window.location.href = 'sign-up.html';
+        } else {
+            window.location.href = 'index.html';
+        }
     }
 
+    // This listener acts as a fallback for state changes after the initial page load
+    auth.onAuthStateChanged(user => {
+        if (!user || user.email !== adminEmail) {
+            if (!user) {
+                window.location.href = 'sign-up.html';
+            } else {
+                window.location.href = 'index.html';
+            }
+        }
+    });
+}
     // --- Dynamic Page Loading Functions ---
     async function loadPage(page) {
         // ... (Your loadPage function remains the same)
