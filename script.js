@@ -31,7 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return; // Stop execution here
             }
 
-            userEmailSpan.textContent = user.email;
+            if (userEmailSpan) {
+                userEmailSpan.textContent = user.email;
+            }
 
             if (user.email === adminEmail) {
                 // User is the admin
@@ -39,10 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     adminLinkContainer.style.display = 'list-item';
                 }
                 if (window.location.pathname.endsWith('admin.html')) {
-                    // Only load the admin panel logic on the admin page
                     loadAdminPanel();
                 } else if (mainContent) {
-                    // If an admin is on the index page, load regular dashboard
                     const currentHash = window.location.hash || '#dashboard';
                     loadPage(currentHash);
                 }
@@ -52,7 +52,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     adminLinkContainer.style.display = 'none';
                 }
                 if (mainContent) {
-                    // Only load student content on the index page
                     const currentHash = window.location.hash || '#dashboard';
                     loadPage(currentHash);
                 }
@@ -196,20 +195,214 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function renderDashboard() {
-        // ... (Your existing renderDashboard function) ...
+        const user = auth.currentUser;
+        if (!user) return;
+
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        const userData = userDoc.data();
+
+        const dashboardHtml = `
+            <div class="page-section">
+                <h2>Welcome, ${userData.name}!</h2>
+                <p>Your Current Points: <strong>${userData.points}</strong></p>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" style="width: ${(userData.points / 1000) * 100}%;"></div>
+                </div>
+                <p><strong>Academic Year:</strong> ${userData.year}</p>
+            </div>
+            <div class="page-section" id="current-quests">
+                <h2>Current Quests</h2>
+            </div>
+            <div class="page-section" id="top-leaderboard">
+                <h2>Top 5 Leaderboard</h2>
+            </div>
+        `;
+        mainContent.innerHTML = dashboardHtml;
+
+        // Fetch and display quests
+        const questsSnapshot = await db.collection('quests').get();
+        let questsHtml = '<ul>';
+        questsSnapshot.forEach(doc => {
+            const quest = doc.data();
+            questsHtml += `<li>${quest.name} (+${quest.points} pts) - ${quest.description}</li>`;
+        });
+        questsHtml += '</ul>';
+        const currentQuestsEl = document.getElementById('current-quests');
+        if (currentQuestsEl) {
+            currentQuestsEl.innerHTML += questsHtml;
+        }
+
+        // Fetch and display top 5 leaderboard
+        const leaderboardSnapshot = await db.collection('users').orderBy('points', 'desc').limit(5).get();
+        let leaderboardHtml = '<table><thead><tr><th>Rank</th><th>Name</th><th>Points</th></tr></thead><tbody>';
+        let rank = 1;
+        leaderboardSnapshot.forEach(doc => {
+            const student = doc.data();
+            leaderboardHtml += `<tr><td>${rank++}</td><td>${student.name}</td><td>${student.points}</td></tr>`;
+        });
+        leaderboardHtml += '</tbody></table>';
+        const topLeaderboardEl = document.getElementById('top-leaderboard');
+        if (topLeaderboardEl) {
+            topLeaderboardEl.innerHTML += leaderboardHtml;
+        }
     }
 
     async function renderQuests() {
-        // ... (Your existing renderQuests function) ...
+        const questsSnapshot = await db.collection('quests').get();
+        let questsHtml = `
+            <div class="page-section">
+                <h2>All Available Quests</h2>
+                <div id="quest-grid">
+        `;
+        questsSnapshot.forEach(doc => {
+            const quest = doc.data();
+            questsHtml += `
+                <div class="quest-card">
+                    <h3>${quest.name}</h3>
+                    <p>${quest.description}</p>
+                    <span class="points">+${quest.points} pts</span>
+                </div>
+            `;
+        });
+        questsHtml += `
+                </div>
+            </div>
+        `;
+        if (mainContent) {
+            mainContent.innerHTML = questsHtml;
+        }
     }
 
     async function renderLeaderboard() {
-        // ... (Your existing renderLeaderboard function) ...
+        const leaderboardSnapshot = await db.collection('users').orderBy('points', 'desc').get();
+        let leaderboardHtml = `
+            <div class="page-section">
+                <h2>Global Leaderboard</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Name</th>
+                            <th>University Year</th>
+                            <th>Points</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        let rank = 1;
+        leaderboardSnapshot.forEach(doc => {
+            const student = doc.data();
+            leaderboardHtml += `
+                <tr>
+                    <td>${rank++}</td>
+                    <td>${student.name}</td>
+                    <td>${student.year}</td>
+                    <td>${student.points}</td>
+                </tr>
+            `;
+        });
+        leaderboardHtml += `
+                    </tbody>
+                </table>
+            </div>
+            <div class="page-section" id="badges-container">
+                <h2>Badges & Achievements</h2>
+            </div>
+        `;
+        if (mainContent) {
+            mainContent.innerHTML = leaderboardHtml;
+        }
+
+        const user = auth.currentUser;
+        if (!user) return;
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        const badges = userDoc.data().badges;
+        let badgesHtml = '<ul>';
+        badges.forEach(badge => {
+            badgesHtml += `<li>${badge}</li>`;
+        });
+        badgesHtml += '</ul>';
+        const badgesContainerEl = document.getElementById('badges-container');
+        if (badgesContainerEl) {
+            badgesContainerEl.innerHTML += badgesHtml;
+        }
     }
 
     async function renderProfile() {
-        // ... (Your existing renderProfile function) ...
+        const user = auth.currentUser;
+        if (!user) return;
+
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        const userData = userDoc.data();
+
+        const profileHtml = `
+            <div class="page-section">
+                <h2>My Profile</h2>
+                <p><strong>Name:</strong> ${userData.name}</p>
+                <p><strong>University ID:</strong> ${userData.universityId}</p>
+                <p><strong>Email:</strong> ${userData.email}</p>
+                <p><strong>Courses:</strong> ${userData.courses.join(', ')}</p>
+                <p><strong>University Year:</strong> <span id="current-year">${userData.year}</span></p>
+                <button id="edit-profile-btn">Edit Profile</button>
+            </div>
+            
+            <div class="page-section" id="edit-profile-section" style="display:none;">
+                <h3>Edit My Profile</h3>
+                <form id="edit-profile-form">
+                    <label for="edit-year">Change University Year:</label>
+                    <select id="edit-year" required>
+                        <option value="Freshman" ${userData.year === 'Freshman' ? 'selected' : ''}>Freshman</option>
+                        <option value="Sophomore" ${userData.year === 'Sophomore' ? 'selected' : ''}>Sophomore</option>
+                        <option value="Junior" ${userData.year === 'Junior' ? 'selected' : ''}>Junior</option>
+                        <option value="Senior" ${userData.year === 'Senior' ? 'selected' : ''}>Senior</option>
+                    </select>
+                    <button type="submit">Save Changes</button>
+                </form>
+            </div>
+            
+            <div class="page-section">
+                <h3>My Badges</h3>
+                <ul id="profile-badges-list"></ul>
+            </div>
+        `;
+        if (mainContent) {
+            mainContent.innerHTML = profileHtml;
+        }
+
+        const profileBadgesListEl = document.getElementById('profile-badges-list');
+        if (profileBadgesListEl) {
+            let badgesHtml = '';
+            userData.badges.forEach(badge => {
+                badgesHtml += `<li>${badge}</li>`;
+            });
+            profileBadgesListEl.innerHTML = badgesHtml;
+        }
+
+        const editBtn = document.getElementById('edit-profile-btn');
+        const editSection = document.getElementById('edit-profile-section');
+        const editForm = document.getElementById('edit-profile-form');
+
+        if (editBtn && editSection) {
+            editBtn.addEventListener('click', () => {
+                editSection.style.display = 'block';
+            });
+        }
+
+        if (editForm) {
+            editForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newYear = document.getElementById('edit-year').value;
+                await db.collection('users').doc(user.uid).update({ year: newYear });
+                alert('University year updated successfully!');
+                const currentYearEl = document.getElementById('current-year');
+                if (currentYearEl) {
+                    currentYearEl.textContent = newYear;
+                }
+                editSection.style.display = 'none';
+            });
+        }
     }
+
 
     // --- Admin Panel Logic (for admin.html) ---
     function loadAdminPanel() {
