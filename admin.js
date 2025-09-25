@@ -25,34 +25,38 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-// Modify the Add Quest form listener
 addQuestForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const name = addQuestForm['quest-name'].value;
-    const points = parseInt(addQuestForm['quest-points'].value);
-    const type = addQuestForm['quest-type'].value;
-    const deadline = new Date(addQuestForm['quest-deadline'].value).toISOString();
-    const description = addQuestForm['quest-description'].value;
-    const badge = addQuestForm['quest-badge'].value; // Get the badge name
+    try {
+        const name = addQuestForm['quest-name'].value;
+        const points = parseInt(addQuestForm['quest-points'].value);
+        const type = addQuestForm['quest-type'].value;
+        const deadline = new Date(addQuestForm['quest-deadline'].value).toISOString();
+        const description = addQuestForm['quest-description'].value;
+        const badge = addQuestForm['quest-badge'].value; // Get the badge name
 
-    const questData = {
-        name,
-        points,
-        type,
-        description,
-        deadline
-    };
+        const questData = {
+            name,
+            points,
+            type,
+            description,
+            deadline
+        };
 
-    // Only add the badge field if a badge name was provided
-    if (badge) {
-        questData.badge = badge;
+        // Only add the badge field if a badge name was provided
+        if (badge) {
+            questData.badge = badge;
+        }
+
+        await db.collection('quests').add(questData);
+
+        alert('Quest added successfully!');
+        addQuestForm.reset();
+        displayQuests();
+    } catch (error) {
+        console.error("Error adding quest:", error);
+        alert('Failed to add quest. Check the console and ensure your Firestore rules are correct.');
     }
-
-    await db.collection('quests').add(questData);
-
-    alert('Quest added!');
-    addQuestForm.reset();
-    displayQuests();
 });
 
         // Add Badge
