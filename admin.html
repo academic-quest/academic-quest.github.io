@@ -12,16 +12,17 @@
 <body class="admin-page">
     <div class="admin-container">
         <h2>Admin Panel</h2>
-        <div class="admin-section">
-            <h3>Add New Quest</h3>
-            <form id="add-quest-form">
-                <input type="text" id="quest-name" placeholder="Quest Name" required>
-                <input type="number" id="quest-points" placeholder="Points" required>
-                <input type="text" id="quest-type" placeholder="Type (e.g., Attendance)" required>
-                <textarea id="quest-description" placeholder="Description" required></textarea>
-                <button type="submit">Add Quest</button>
-            </form>
-        </div>
+<div class="admin-section">
+    <h3>Add New Quest</h3>
+    <form id="add-quest-form">
+        <input type="text" id="quest-name" placeholder="Quest Name" required>
+        <input type="number" id="quest-points" placeholder="Points" required>
+        <input type="text" id="quest-type" placeholder="Type (e.g., Attendance)" required>
+        <input type="datetime-local" id="quest-deadline" placeholder="Deadline" required>
+        <textarea id="quest-description" placeholder="Description" required></textarea>
+        <button type="submit">Add Quest</button>
+    </form>
+</div>
         
         <div class="admin-section">
             <h3>Manage Quests</h3>
