@@ -433,12 +433,12 @@ function loadAdminPanel() {
         }
     });
 
-    displayQuests();
-    displayBadges();
-}
-
-    // Call loadAdminPanel if on the admin page
+        // Call loadAdminPanel if on the admin page
     if (window.location.pathname.endsWith('admin.html')) {
         loadAdminPanel();
     }
 });
+  
+    displayQuests();
+    displayBadges();
+}
