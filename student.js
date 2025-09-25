@@ -68,10 +68,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+// Add or modify the renderDashboard function
 async function renderDashboard(user) {
     const mainContent = document.getElementById('content');
     const userDoc = await db.collection('users').doc(user.uid).get();
-    const userData = userDoc.data();
+    const userData = userDoc.data() || { points: 0, badges: [] };
     const points = userData.points || 0;
     const level = calculateLevel(points);
 
@@ -88,18 +89,14 @@ async function renderDashboard(user) {
                     <p>${level}</p>
                 </div>
             </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: ${(points % 100)}%;"></div>
-            </div>
             <p>${100 - (points % 100)} points to the next level!</p>
             <h3>Recent Activity</h3>
             <ul id="activity-log-list"></ul>
         </div>
     `;
-
-    // A separate function to render the activity log
     await renderActivityLog(user);
 }
+
 
 
     
@@ -193,6 +190,7 @@ async function renderDashboard(user) {
     }
 
 
+// Add or modify the renderQuests function
 async function renderQuests(user) {
     const mainContent = document.getElementById('content');
     mainContent.innerHTML = `
@@ -203,51 +201,104 @@ async function renderQuests(user) {
     `;
     const questsList = document.getElementById('quests-list');
     const questsSnapshot = await db.collection('quests').get();
+    const userDoc = await db.collection('users').doc(user.uid).get();
+    const completedQuests = userDoc.data().completedQuests || [];
 
     if (!questsSnapshot.empty) {
         questsSnapshot.forEach(doc => {
             const quest = doc.data();
+            const questId = doc.id;
+            const isCompleted = completedQuests.includes(questId);
+            const deadline = quest.deadline ? new Date(quest.deadline) : null;
+            const isLate = deadline && new Date() > deadline;
+
             const li = document.createElement('li');
+            li.className = 'quest-item';
+            
+            let statusText = '';
+            let buttonHtml = '';
+            if (isCompleted) {
+                statusText = '<span class="completed">✅ Completed</span>';
+            } else if (isLate) {
+                statusText = '<span class="late">❌ Expired</span>';
+            } else {
+                buttonHtml = `<button class="take-points-btn" data-quest-id="${questId}" data-points="${quest.points}" data-badge="${quest.badge}">Take Points</button>`;
+            }
+
+            const deadlineText = deadline ? `Due: ${deadline.toLocaleString()}` : 'No deadline';
+
             li.innerHTML = `
-                <h4>${quest.name}</h4>
-                <p>${quest.description}</p>
-                <span>Points: ${quest.points}</span>
+                <div class="quest-details">
+                    <h4>${quest.name}</h4>
+                    <p>${quest.description}</p>
+                    <span class="quest-points">Points: ${quest.points}</span>
+                    <span class="quest-deadline">${deadlineText}</span>
+                    ${statusText}
+                </div>
+                ${buttonHtml}
             `;
             questsList.appendChild(li);
         });
+
+        // Add event listeners for "Take Points" buttons
+        document.querySelectorAll('.take-points-btn').forEach(button => {
+            button.addEventListener('click', async (e) => {
+                const questId = e.target.dataset.questId;
+                const points = parseInt(e.target.dataset.points);
+                const badge = e.target.dataset.badge;
+
+                await completeQuest(user, questId, points, badge);
+            });
+        });
+
     } else {
         questsList.innerHTML = '<p>No quests available at the moment. Check back later!</p>';
     }
 }
-
     
-    async function completeQuest(userId, questId, points) {
-        try {
-            await db.collection('completedQuests').add({
-                userId: userId,
-                questId: questId,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
-
-            await db.collection('users').doc(userId).update({
-                points: firebase.firestore.FieldValue.increment(points)
-            });
-
-            await db.collection('activityLog').add({
-                userId: userId,
-                message: `Completed a quest and earned ${points} points.`,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                points: points
-            });
-
-            alert('Quest completed successfully!');
-            loadPage('#quests', { uid: userId }); // Reload the quests page to show the updated status
-        } catch (error) {
-            console.error("Error completing quest: ", error);
-            alert('Failed to complete quest.');
-        }
+// Add this new function to handle quest completion
+async function completeQuest(user, questId, points, badge) {
+    const userRef = db.collection('users').doc(user.uid);
+    const questRef = db.collection('quests').doc(questId);
+    
+    // Check if the quest has a deadline and if it's expired
+    const questDoc = await questRef.get();
+    const questData = questDoc.data();
+    if (questData.deadline && new Date() > new Date(questData.deadline)) {
+        alert('This quest has expired and you can no longer get points.');
+        return;
     }
 
+    // Use a transaction to safely update user data
+    await db.runTransaction(async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+        if (!userDoc.exists) {
+            throw "Document does not exist!";
+        }
+        
+        const userData = userDoc.data();
+        const newPoints = (userData.points || 0) + points;
+        const newCompletedQuests = [...(userData.completedQuests || []), questId];
+        const newBadges = [...(userData.badges || [])];
+
+        // Add badge if it's a new one
+        if (badge && !newBadges.includes(badge)) {
+            newBadges.push(badge);
+        }
+
+        transaction.update(userRef, {
+            points: newPoints,
+            completedQuests: newCompletedQuests,
+            badges: newBadges
+        });
+    });
+
+    alert(`You've completed the quest and earned ${points} points!`);
+    
+    // Re-render the page to show the updated quest status
+    window.location.reload();
+}
+    
     async function renderLeaderboard(user) {
         const leaderboardList = document.getElementById('leaderboard-list');
         leaderboardList.innerHTML = '<li>Loading...</li>';
