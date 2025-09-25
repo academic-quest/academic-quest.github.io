@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Main function to initialize the student dashboard
     function initStudentDashboard(user) {
         const mainContent = document.getElementById('content');
         if (!mainContent) {
@@ -18,6 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const navLinks = document.querySelectorAll('.nav-link');
+        const contentSections = document.querySelectorAll('.page-content');
+
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -31,15 +32,24 @@ document.addEventListener('DOMContentLoaded', () => {
         loadPage(currentHash, user);
     }
 
-    // --- Dynamic Page Loading Functions ---
     async function loadPage(page, user) {
-        const mainContent = document.getElementById('content');
-        mainContent.innerHTML = '';
-        const navLinks = document.querySelectorAll('.nav-link');
-        navLinks.forEach(link => link.classList.remove('active'));
-        const activeLink = document.querySelector(`.nav-link[href=\"${page}\"]`);
+        document.querySelectorAll('.page-content').forEach(section => {
+            section.style.display = 'none';
+        });
+
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+
+        const activeLink = document.querySelector(`.nav-link[href="${page}"]`);
         if (activeLink) {
             activeLink.classList.add('active');
+        }
+
+        const contentSectionId = page.substring(1) + '-content';
+        const contentSection = document.getElementById(contentSectionId);
+        if (contentSection) {
+            contentSection.style.display = 'block';
         }
 
         switch (page) {
@@ -59,172 +69,233 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function renderDashboard(user) {
-        const userDocRef = db.collection('users').doc(user.uid);
-        const userDoc = await userDocRef.get();
-        const userData = userDoc.data();
-
-        mainContent.innerHTML = `
-            <section id="dashboard-content" class="page-content">
-                <h2>Welcome, ${userData.name}!</h2>
-                <div class="stats-container">
-                    <div class="stat-box">
-                        <h3>Your Points</h3>
-                        <p id="current-points">${userData.points}</p>
-                    </div>
-                    <div class="stat-box">
-                        <h3>Your Level</h3>
-                        <p id="current-level">${calculateLevel(userData.points)}</p>
-                    </div>
-                </div>
-                <div class="recent-activity">
-                    <h3>Recent Activity</h3>
-                    <ul id="activity-log-list"></ul>
-                </div>
-            </section>
-        `;
-
-        await renderActivityLog(user);
-    }
-
-    // ... (rest of the functions from your original student.js file)
-    async function renderQuests(user) {
-        const mainContent = document.getElementById('content');
-        const userQuests = (await db.collection('users').doc(user.uid).get()).data().questsCompleted || [];
-        const questsSnapshot = await db.collection('quests').get();
-        let questsHtml = `
-            <section id="quests-content" class="page-content">
-                <h2>Available Quests</h2>
-                <div class="quest-list-container">
-                    <ul class="quest-list">
-        `;
-        questsSnapshot.forEach(doc => {
-            const quest = { id: doc.id, ...doc.data() };
-            const isCompleted = userQuests.includes(quest.id);
-            questsHtml += `
-                <li class="quest-item ${isCompleted ? 'completed' : ''}">
-                    <h3>${quest.name}</h3>
-                    <p>${quest.description}</p>
-                    <div class="quest-meta">
-                        <span>${quest.points} points</span> | <span>${quest.type}</span>
-                    </div>
-                    ${!isCompleted ? `<button class="complete-btn" data-id="${quest.id}">Complete Quest</button>` : '<span>Completed! ✅</span>'}
-                </li>
-            `;
-        });
-        questsHtml += `</ul></div></section>`;
-        mainContent.innerHTML = questsHtml;
-
-        const completeButtons = document.querySelectorAll('.complete-btn');
-        completeButtons.forEach(button => {
-            button.addEventListener('click', async (e) => {
-                const questId = e.target.dataset.id;
-                await completeQuest(user, questId);
-            });
-        });
-    }
-
-    async function completeQuest(user, questId) {
-        const userRef = db.collection('users').doc(user.uid);
-        const questRef = db.collection('quests').doc(questId);
-    
         try {
-            const userDoc = await userRef.get();
-            const questDoc = await questRef.get();
-    
-            if (userDoc.exists && questDoc.exists) {
+            const userDoc = await db.collection('users').doc(user.uid).get();
+            if (userDoc.exists) {
                 const userData = userDoc.data();
-                const questData = questDoc.data();
-                const questsCompleted = userData.questsCompleted || [];
-    
-                if (!questsCompleted.includes(questId)) {
-                    await userRef.update({
-                        points: firebase.firestore.FieldValue.increment(questData.points),
-                        questsCompleted: firebase.firestore.FieldValue.arrayUnion(questId)
-                    });
-    
-                    await db.collection('activityLog').add({
-                        userId: user.uid,
-                        message: `Completed the quest "${questData.name}" and earned ${questData.points} points.`,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-    
-                    alert(`Quest "${questData.name}" completed! You earned ${questData.points} points.`);
-                    await loadPage('#quests', user);
-                } else {
-                    alert('You have already completed this quest.');
-                }
-            } else {
-                alert('Quest or user not found.');
+                document.getElementById('student-name').textContent = userData.name || 'N/A';
+                document.getElementById('student-id').textContent = `ID: ${userData.universityId || 'N/A'}`;
+                document.getElementById('student-year').textContent = `University Year: ${userData.year || 'N/A'}`;
+                document.getElementById('user-points').textContent = userData.points || 0;
+                document.getElementById('user-level').textContent = calculateLevel(userData.points || 0);
+
+                await renderQuestsOverview(user);
+                await renderLeaderboardOverview();
+                await renderPointsBreakdown(user);
             }
         } catch (error) {
-            console.error("Error completing quest:", error);
-            alert("Failed to complete quest.");
+            console.error("Error rendering dashboard: ", error);
         }
     }
 
-    async function renderLeaderboard() {
-        const mainContent = document.getElementById('content');
-        const usersSnapshot = await db.collection('users').orderBy('points', 'desc').get();
-        let leaderboardHtml = `
-            <section id="leaderboard-content" class="page-content">
-                <h2>Leaderboard</h2>
-                <ol id="leaderboard-list">
-        `;
-        usersSnapshot.forEach((doc, index) => {
-            const user = doc.data();
-            leaderboardHtml += `
-                <li>
-                    <span>#${index + 1}</span>
-                    <span>${user.name}</span>
-                    <span>${user.points} points</span>
-                </li>
-            `;
-        });
-        leaderboardHtml += `</ol></section>`;
-        mainContent.innerHTML = leaderboardHtml;
+    async function renderQuestsOverview(user) {
+        const questList = document.getElementById('quests-overview-list');
+        questList.innerHTML = '<li>Loading...</li>';
+        try {
+            const questsSnapshot = await db.collection('quests').get();
+            const completedQuestsSnapshot = await db.collection('completedQuests').where('userId', '==', user.uid).get();
+            const completedQuests = new Set(completedQuestsSnapshot.docs.map(doc => doc.data().questId));
+            
+            questList.innerHTML = '';
+            if (!questsSnapshot.empty) {
+                questsSnapshot.docs.slice(0, 3).forEach(doc => {
+                    const quest = doc.data();
+                    const isCompleted = completedQuests.has(doc.id);
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="quest-item">
+                            <span class="quest-name">${quest.name}</span>
+                            <span class="quest-status">${isCompleted ? '✓ Completed' : 'Pending'}</span>
+                        </div>
+                    `;
+                    questList.appendChild(li);
+                });
+            } else {
+                questList.innerHTML = '<li>No quests found.</li>';
+            }
+        } catch (error) {
+            console.error("Error rendering quests overview: ", error);
+        }
+    }
+    
+    async function renderLeaderboardOverview() {
+        const leaderboardList = document.getElementById('leaderboard-overview-list');
+        leaderboardList.innerHTML = '<li>Loading...</li>';
+        try {
+            const usersSnapshot = await db.collection('users').orderBy('points', 'desc').limit(3).get();
+            leaderboardList.innerHTML = '';
+            let rank = 1;
+            if (!usersSnapshot.empty) {
+                usersSnapshot.forEach(doc => {
+                    const user = doc.data();
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="leaderboard-item">
+                            <span class="leaderboard-rank">#${rank}</span>
+                            <span class="leaderboard-name">${user.name}</span>
+                            <span class="leaderboard-level">Level ${calculateLevel(user.points)}</span>
+                        </div>
+                    `;
+                    leaderboardList.appendChild(li);
+                    rank++;
+                });
+            } else {
+                leaderboardList.innerHTML = '<li>No users on leaderboard.</li>';
+            }
+        } catch (error) {
+            console.error("Error rendering leaderboard overview: ", error);
+        }
+    }
+
+    async function renderPointsBreakdown(user) {
+        const pointsBreakdownList = document.getElementById('points-breakdown-list');
+        pointsBreakdownList.innerHTML = '<li>Loading...</li>';
+        try {
+            const activitySnapshot = await db.collection('activityLog')
+                .where('userId', '==', user.uid)
+                .orderBy('timestamp', 'desc')
+                .limit(5)
+                .get();
+            pointsBreakdownList.innerHTML = '';
+            if (!activitySnapshot.empty) {
+                activitySnapshot.forEach(doc => {
+                    const activity = doc.data();
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="point-item">
+                            <span class="point-description">${activity.message}</span>
+                            <span class="point-value">+${activity.points} pts</span>
+                        </div>
+                    `;
+                    pointsBreakdownList.appendChild(li);
+                });
+            } else {
+                pointsBreakdownList.innerHTML = '<li>No points earned yet.</li>';
+            }
+        } catch (error) {
+            console.error("Error rendering points breakdown: ", error);
+        }
+    }
+
+    async function renderQuests(user) {
+        const questList = document.getElementById('quest-list');
+        questList.innerHTML = '<li>Loading...</li>';
+        try {
+            const questsSnapshot = await db.collection('quests').get();
+            const completedQuestsSnapshot = await db.collection('completedQuests').where('userId', '==', user.uid).get();
+            const completedQuests = new Set(completedQuestsSnapshot.docs.map(doc => doc.data().questId));
+
+            questList.innerHTML = '';
+            if (!questsSnapshot.empty) {
+                questsSnapshot.forEach(doc => {
+                    const quest = doc.data();
+                    const isCompleted = completedQuests.has(doc.id);
+                    const li = document.createElement('li');
+                    li.classList.add('quest-card');
+                    li.innerHTML = `
+                        <div class="quest-header">
+                            <h3>${quest.name}</h3>
+                            <span class="quest-points">+${quest.points} pts</span>
+                        </div>
+                        <p class="quest-description">${quest.description}</p>
+                        <button class="complete-btn" data-id="${doc.id}" data-points="${quest.points}" ${isCompleted ? 'disabled' : ''}>
+                            ${isCompleted ? 'Completed' : 'Complete Quest'}
+                        </button>
+                    `;
+                    questList.appendChild(li);
+                });
+                
+                // Add event listeners for quest completion
+                document.querySelectorAll('.complete-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const questId = e.target.dataset.id;
+                        const points = parseInt(e.target.dataset.points);
+                        await completeQuest(user.uid, questId, points);
+                    });
+                });
+            } else {
+                questList.innerHTML = '<p>No quests available at the moment.</p>';
+            }
+        } catch (error) {
+            console.error("Error rendering quests: ", error);
+        }
+    }
+
+    async function completeQuest(userId, questId, points) {
+        try {
+            await db.collection('completedQuests').add({
+                userId: userId,
+                questId: questId,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            await db.collection('users').doc(userId).update({
+                points: firebase.firestore.FieldValue.increment(points)
+            });
+
+            await db.collection('activityLog').add({
+                userId: userId,
+                message: `Completed a quest and earned ${points} points.`,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                points: points
+            });
+
+            alert('Quest completed successfully!');
+            loadPage('#quests', { uid: userId }); // Reload the quests page to show the updated status
+        } catch (error) {
+            console.error("Error completing quest: ", error);
+            alert('Failed to complete quest.');
+        }
+    }
+
+    async function renderLeaderboard(user) {
+        const leaderboardList = document.getElementById('leaderboard-list');
+        leaderboardList.innerHTML = '<li>Loading...</li>';
+        try {
+            const usersSnapshot = await db.collection('users').orderBy('points', 'desc').get();
+            leaderboardList.innerHTML = '';
+            let rank = 1;
+            if (!usersSnapshot.empty) {
+                usersSnapshot.forEach(doc => {
+                    const leaderboardUser = doc.data();
+                    const li = document.createElement('li');
+                    li.classList.add('leaderboard-item');
+                    li.innerHTML = `
+                        <div class="leaderboard-rank">#${rank}</div>
+                        <div class="leaderboard-info">
+                            <span class="leaderboard-name">${leaderboardUser.name}</span>
+                            <span class="leaderboard-id">ID: ${leaderboardUser.universityId}</span>
+                        </div>
+                        <div class="leaderboard-score">
+                            <span class="leaderboard-level">Level ${calculateLevel(leaderboardUser.points)}</span>
+                            <span class="leaderboard-points">${leaderboardUser.points} pts</span>
+                        </div>
+                    `;
+                    leaderboardList.appendChild(li);
+                    rank++;
+                });
+            } else {
+                leaderboardList.innerHTML = '<p>No users on the leaderboard yet.</p>';
+            }
+        } catch (error) {
+            console.error("Error rendering leaderboard: ", error);
+        }
     }
 
     async function renderProfile(user) {
-        const mainContent = document.getElementById('content');
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        const userData = userDoc.data();
-        const badgesSnapshot = await db.collection('badges').where('id', 'in', userData.badges || []).get();
-
-        let badgesHtml = '';
-        badgesSnapshot.forEach(doc => {
-            const badge = doc.data();
-            badgesHtml += `<li>${badge.name} - ${badge.description}</li>`;
-        });
-
-        mainContent.innerHTML = `
-            <section id="profile-content" class="page-content">
-                <h2>Your Profile</h2>
-                <form id="profile-form">
-                    <label for="profile-name">Full Name:</label>
-                    <input type="text" id="profile-name" value="${userData.name}" required>
-                    
-                    <label for="profile-id">University ID:</label>
-                    <input type="text" id="profile-id" value="${userData.universityId}" required>
-                    
-                    <label for="profile-year">University Year:</label>
-                    <select id="profile-year" required>
-                        <option value="Freshman" ${userData.year === 'Freshman' ? 'selected' : ''}>Freshman</option>
-                        <option value="Sophomore" ${userData.year === 'Sophomore' ? 'selected' : ''}>Sophomore</option>
-                        <option value="Junior" ${userData.year === 'Junior' ? 'selected' : ''}>Junior</option>
-                        <option value="Senior" ${userData.year === 'Senior' ? 'selected' : ''}>Senior</option>
-                    </select>
-
-                    <label for="profile-courses">Courses (comma-separated):</label>
-                    <input type="text" id="profile-courses" value="${userData.courses ? userData.courses.join(', ') : ''}" required>
-                    
-                    <button type="submit">Update Profile</button>
-                </form>
-                
-                <h3>Your Badges</h3>
-                <ul id="badge-list">${badgesHtml}</ul>
-            </section>
-        `;
         const profileForm = document.getElementById('profile-form');
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            document.getElementById('profile-card-name').textContent = userData.name || 'N/A';
+            document.getElementById('profile-card-year').textContent = `University Year: ${userData.year || 'N/A'}`;
+            document.getElementById('profile-name').value = userData.name || '';
+            document.getElementById('profile-id').value = userData.universityId || '';
+            document.getElementById('profile-email').value = user.email;
+            document.getElementById('profile-year').value = userData.year || 'Freshman';
+            document.getElementById('profile-courses').value = userData.courses.join(', ') || '';
+        }
+
         profileForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             await updateProfile(user.uid);
@@ -245,39 +316,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 courses: courses
             });
             alert('Profile updated successfully!');
-            await renderProfile(user);
+            // Reload the profile page to show the updated info
+            loadPage('#profile', { uid: userId });
         } catch (error) {
             console.error("Error updating profile: ", error);
             alert('Failed to update profile.');
         }
     }
 
-    async function renderActivityLog(user) {
-        const activityLogList = document.getElementById('activity-log-list');
-        const activitySnapshot = await db.collection('activityLog')
-            .where('userId', '==', user.uid)
-            .orderBy('timestamp', 'desc')
-            .limit(10)
-            .get();
-
-        if (!activitySnapshot.empty) {
-            activityLogList.innerHTML = '';
-            activitySnapshot.forEach(doc => {
-                const activity = doc.data();
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <p class="log-message">${activity.message}</p>
-                    <span class="log-timestamp">${new Date(activity.timestamp.seconds * 1000).toLocaleString()}</span>
-                `;
-                activityLogList.appendChild(li);
-            });
-        } else {
-            activityLogList.innerHTML = '<p>No activity recorded yet.</p>';
-        }
-    }
-
     function calculateLevel(points) {
         return Math.floor(points / 100) + 1;
     }
-
 });
