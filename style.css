@@ -4,6 +4,7 @@ body {
     padding: 0;
     background-color: #f4f7f9;
     color: #333;
+    line-height: 1.6;
 }
 
 header {
@@ -13,6 +14,11 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1000;
+    box-sizing: border-box;
 }
 
 .logo h1 {
@@ -38,6 +44,8 @@ nav ul {
 
 .nav-link:hover, .nav-link.active {
     color: #4CAF50;
+    border-bottom: 2px solid #4CAF50;
+    padding-bottom: 4px;
 }
 
 .user-info {
@@ -46,7 +54,7 @@ nav ul {
     gap: 1rem;
 }
 
-#logout-btn {
+#logout-btn, #admin-logout-btn {
     background-color: #e74c3c;
     color: white;
     border: none;
@@ -56,16 +64,363 @@ nav ul {
     transition: background-color 0.3s;
 }
 
-#logout-btn:hover {
+#logout-btn:hover, #admin-logout-btn:hover {
     background-color: #c0392b;
 }
 
-/* Auth Pages (Sign-up, Login) */
+main {
+    padding-top: 5rem; /* Space for the fixed header */
+    padding: 5rem 2rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Page content sections */
+.page-content {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Dashboard Page */
+.dashboard-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    padding: 2rem;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.profile-pic {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 4px solid #4CAF50;
+    object-fit: cover;
+}
+
+.user-details h2 {
+    margin: 0 0 0.5rem;
+    color: #2c3e50;
+}
+
+.user-details p {
+    margin: 0;
+    color: #7f8c8d;
+}
+
+.dashboard-stats {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.stat-card {
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.stat-card h3 {
+    margin: 0 0 0.5rem;
+    color: #4CAF50;
+    font-size: 1rem;
+}
+
+.stat-card p {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 600;
+    color: #34495e;
+}
+
+.dashboard-sections {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.section-card {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.section-card h3 {
+    margin-top: 0;
+    color: #34495e;
+    border-bottom: 2px solid #ecf0f1;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.section-card ul, .section-card ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.section-card li {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #ecf0f1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.section-card li:last-child {
+    border-bottom: none;
+}
+
+.view-all-link {
+    display: block;
+    margin-top: 1.5rem;
+    text-align: right;
+    color: #4CAF50;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.quest-item {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.quest-status {
+    font-weight: 600;
+    color: #4CAF50;
+}
+
+.leaderboard-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.leaderboard-rank {
+    font-weight: 700;
+    color: #4CAF50;
+    min-width: 30px;
+}
+
+.leaderboard-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.leaderboard-name {
+    font-weight: 600;
+}
+
+.leaderboard-id {
+    font-size: 0.8em;
+    color: #7f8c8d;
+}
+
+.leaderboard-score {
+    text-align: right;
+}
+
+.leaderboard-level {
+    font-size: 0.9em;
+    color: #7f8c8d;
+}
+
+.leaderboard-points {
+    font-weight: bold;
+    color: #3498db;
+}
+
+.point-item {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.point-description {
+    flex-grow: 1;
+}
+
+.point-value {
+    font-weight: bold;
+    color: #27ae60;
+}
+
+/* Quests Page */
+#quest-list {
+    display: grid;
+    gap: 1.5rem;
+    list-style: none;
+    padding: 0;
+}
+
+.quest-card {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.quest-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ecf0f1;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+.quest-header h3 {
+    margin: 0;
+    color: #34495e;
+}
+
+.quest-points {
+    font-weight: 600;
+    color: #27ae60;
+}
+
+.quest-description {
+    color: #555;
+    margin-bottom: 1.5rem;
+}
+
+.complete-btn {
+    width: 100%;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 4px;
+    background-color: #4CAF50;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.complete-btn:hover {
+    background-color: #45a049;
+}
+
+.complete-btn:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+}
+
+/* Leaderboard Page */
+#leaderboard-list {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 1rem;
+}
+
+.leaderboard-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.leaderboard-list-item:nth-child(1) {
+    background-color: #FFD700;
+}
+
+.leaderboard-list-item:nth-child(2) {
+    background-color: #C0C0C0;
+}
+
+.leaderboard-list-item:nth-child(3) {
+    background-color: #CD7F32;
+}
+
+/* Profile Page */
+.profile-card {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.profile-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #ecf0f1;
+    padding-bottom: 1.5rem;
+}
+
+.profile-header h3 {
+    margin: 1rem 0 0.5rem;
+}
+
+.profile-header p {
+    margin: 0;
+    color: #7f8c8d;
+}
+
+#profile-form .form-group {
+    margin-bottom: 1rem;
+}
+
+#profile-form label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+#profile-form input, #profile-form select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+#profile-form button {
+    width: 100%;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 4px;
+    background-color: #3498db;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#profile-form button:hover {
+    background-color: #2980b9;
+}
+
+/* Auth Page */
 .auth-page {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    background-color: #f0f2f5;
 }
 
 .auth-container {
@@ -108,46 +463,85 @@ nav ul {
     background-color: #45a049;
 }
 
+.auth-container p {
+    text-align: center;
+    margin-top: 1rem;
+}
+
 /* Admin Page */
 .admin-page {
     background-color: #f0f2f5;
     padding: 2rem;
+    display: flex;
+    justify-content: center;
+    padding-top: 5rem;
 }
 
 .admin-container {
     background-color: #fff;
     padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    width: 100%;
     max-width: 800px;
-    margin: auto;
 }
 
 .admin-section {
     margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #eee;
 }
 
 .admin-section h3 {
-    border-left: 4px solid #4CAF50;
-    padding-left: 1rem;
+    border-bottom: 2px solid #ecf0f1;
+    padding-bottom: 0.5rem;
+    color: #34495e;
+}
+
+.admin-section form input, .admin-section form textarea, .admin-section form button {
+    width: 100%;
     margin-bottom: 1rem;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
 }
 
-/* General Layout */
-main {
-    padding: 2rem;
+.admin-section form textarea {
+    resize: vertical;
 }
 
-.page-section {
-    background-color: #fff;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+.admin-list {
+    list-style: none;
+    padding: 0;
 }
 
-.page-section h2 {
-    color: #4CAF50;
-    margin-top: 0;
+.admin-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    margin-bottom: 0.5rem;
+}
+
+.admin-list-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.admin-list-actions button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.delete-btn {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.edit-btn {
+    background-color: #f39c12;
+    color: white;
 }
