@@ -1,119 +1,140 @@
 // This file contains all logic for the student dashboard (index.html)
 
 document.addEventListener('DOMContentLoaded', () => {
+    // These are initialized in script.js, but we re-declare them here for use
     const auth = firebase.auth();
     const db = firebase.firestore();
 
     auth.onAuthStateChanged(user => {
         if (user) {
+            // User is logged in, so set up the dashboard page
             initStudentDashboard(user);
         }
     });
 
     function initStudentDashboard(user) {
-        const mainContent = document.getElementById('content');
-        if (!mainContent) {
-            return;
-        }
-
-        const navLinks = document.querySelectorAll('.nav-link');
-        const contentSections = document.querySelectorAll('.page-content');
-
-        navLinks.forEach(link => {
+        // Set up navigation link clicks
+        document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                const target = e.target.getAttribute('href');
-                history.pushState(null, '', target);
-                loadPage(target, user);
+                const targetPage = e.currentTarget.getAttribute('href');
+                window.location.hash = targetPage; // Use hash for navigation state
             });
         });
-
-        const currentHash = window.location.hash || '#dashboard';
-        loadPage(currentHash, user);
+        
+        // Listen for hash changes to load pages
+        window.addEventListener('hashchange', () => loadPage(user));
+        
+        // Load the initial page
+        loadPage(user);
     }
 
-async function loadPage(page, user) {
-    // De-activate all navigation links first
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-    });
+    async function loadPage(user) {
+        const page = window.location.hash || '#dashboard';
 
-    // Activate the correct link
-    const activeLink = document.querySelector(`.nav-link[href="${page}"]`);
-    if (activeLink) {
-        activeLink.classList.add('active');
-    }
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        const activeLink = document.querySelector(`.nav-link[href="${page}"]`);
+        if (activeLink) activeLink.classList.add('active');
 
-    // Call the correct function to render the page content
-    switch (page) {
-        case '#quests':
-            await renderQuests(user);
-            break;
-        case '#leaderboard':
-            await renderLeaderboard(user);
-            break;
-        case '#profile':
-            await renderProfile(user);
-            break;
-        case '#dashboard':
-        default:
-            await renderDashboard(user);
-            break;
-    }
-}
-
-// Add or modify the renderDashboard function
-async function renderDashboard(user) {
-    const mainContent = document.getElementById('content');
-    // Show a loading state first
-    mainContent.innerHTML = '<h2>Loading Dashboard...</h2>'; 
-
-    try {
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        if (!userDoc.exists) {
-            mainContent.innerHTML = '<h2>Error: User data not found.</h2>';
-            return;
+        switch (page) {
+            case '#quests':
+                await renderQuests(user);
+                break;
+            case '#leaderboard':
+                await renderLeaderboard(user);
+                break;
+            case '#profile':
+                await renderProfile(user);
+                break;
+            case '#dashboard':
+            default:
+                await renderDashboard(user);
+                break;
         }
+    }
 
-        const userData = userDoc.data();
-        const points = userData.points || 0;
-        const level = calculateLevel(points);
-        const pointsToNextLevel = 100 - (points % 100);
-        const progressPercentage = (points % 100);
+    // --- ALL YOUR PAGE RENDERING FUNCTIONS GO HERE ---
+    // (renderDashboard, renderQuests, renderLeaderboard, renderProfile, etc.)
+    // Make sure you have all of them from our previous conversations.
+    // I am including the most important one, renderDashboard, for you.
 
-        mainContent.innerHTML = `
-            <div class="dashboard-container">
-                <h2>Welcome, ${userData.name || 'Student'}!</h2>
+    async function renderDashboard(user) {
+        const mainContent = document.getElementById('content');
+        mainContent.innerHTML = '<div class="loading">Loading Dashboard...</div>';
+    
+        try {
+            const [userDoc, questsSnapshot, leaderboardSnapshot] = await Promise.all([
+                db.collection('users').doc(user.uid).get(),
+                db.collection('quests').orderBy('deadline', 'desc').limit(5).get(),
+                db.collection('users').orderBy('points', 'desc').limit(5).get()
+            ]);
+    
+            if (!userDoc.exists) {
+                return mainContent.innerHTML = '<h2>Error: User data not found.</h2>';
+            }
+    
+            const userData = userDoc.data();
+            const points = userData.points || 0;
+            const level = Math.floor(points / 100) + 1;
+            const progress = points % 100;
+
+            mainContent.innerHTML = `
                 <div class="dashboard-grid">
-                    <div class="stats-card main-stats">
-                        <div class="progress-circle" style="--p:${progressPercentage};">
-                            <div class="progress-info">
-                                <h3>Level ${level}</h3>
-                                <span>${points} pts</span>
-                            </div>
+                    <div class="dash-card card-user-info">
+                        <h3>${userData.name || 'Student'}</h3>
+                        <p>ID: ${userData.universityId || 'N/A'}</p>
+                        <div class="progress-circle" style="--p:${progress};">
+                           Level ${level}
                         </div>
-                        <p>${pointsToNextLevel} points to the next level!</p>
+                        <p>${100 - progress} points to next level</p>
                     </div>
-                    <div class="stats-card">
-                        <h3>Points Breakdown</h3>
-                        <ul id="points-breakdown-list"></ul>
+                    <div class="dash-card card-quests">
+                        <h4>Current Quests</h4>
+                        <ul id="dashboard-quest-list"></ul>
                     </div>
-                    <div class="stats-card">
-                        <h3>Badges Earned</h3>
-                        <div id="badges-earned-list" class="badge-display">
-                            ${(userData.badges && userData.badges.length > 0) ? userData.badges.map(b => `<span>${b}</span>`).join('') : '<p>No badges yet!</p>'}
+                    <div class="dash-card card-journey">
+                        <h4>Academic Journey</h4>
+                        <div class="journey-stepper">
+                            <div class="step ${userData.year === 'Freshman' ? 'active' : ''}">Freshman</div>
+                            <div class="step ${userData.year === 'Sophomore' ? 'active' : ''}">Sophomore</div>
+                            <div class="step ${userData.year === 'Junior' ? 'active' : ''}">Junior</div>
+                            <div class="step ${userData.year === 'Senior' ? 'active' : ''}">Senior</div>
                         </div>
+                    </div>
+                    <div class="dash-card card-leaderboard">
+                        <h4>Leaderboard</h4>
+                        <ol id="dashboard-leaderboard-list"></ol>
                     </div>
                 </div>
-            </div>
-        `;
-        // Now that the container exists, render the points breakdown
-        await renderPointsBreakdown(user);
-    } catch (error) {
-        console.error("Error rendering dashboard: ", error);
-        mainContent.innerHTML = '<h2>Could not load dashboard.</h2>';
+            `;
+    
+            // Populate the dynamic content
+            const questList = document.getElementById('dashboard-quest-list');
+            let availableQuests = 0;
+            questsSnapshot.forEach(doc => {
+                if (!(userData.completedQuests || []).includes(doc.id)) {
+                    availableQuests++;
+                    const quest = doc.data();
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span>${quest.name}</span> <span class="quest-points">+${quest.points}</span>`;
+                    questList.appendChild(li);
+                }
+            });
+            if (availableQuests === 0) questList.innerHTML = '<li>No new quests.</li>';
+
+            const leaderboardList = document.getElementById('dashboard-leaderboard-list');
+            leaderboardSnapshot.forEach(doc => {
+                const user = doc.data();
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${user.name}</span> <span>${user.points} pts</span>`;
+                leaderboardList.appendChild(li);
+            });
+    
+        } catch (error) {
+            console.error("Dashboard Error: ", error);
+            mainContent.innerHTML = '<h2>Could not load dashboard.</h2>';
+        }
     }
-}
 
     function renderDashboardQuests(questsSnapshot, completedQuests) {
     const questList = document.getElementById('dashboard-quest-list');
