@@ -545,3 +545,40 @@ main {
     background-color: #f39c12;
     color: white;
 }
+
+/* In style.css */
+@property --p {
+  syntax: '<integer>';
+  initial-value: 0;
+  inherits: false;
+}
+
+.progress-circle {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: 
+    radial-gradient(closest-side, white 80%, transparent 0 99.9%, white 0),
+    conic-gradient(#4CAF50 calc(var(--p) * 1%), #ddd 0);
+  transition: --p 1s;
+  animation: progress 1s 1 forwards;
+  margin: 1rem auto;
+}
+
+@keyframes progress {
+  from { --p: 0; }
+}
+
+.progress-info {
+  text-align: center;
+}
+.progress-info h3 {
+  margin: 0;
+  font-size: 2em;
+}
+.progress-info span {
+  font-size: 1.2em;
+  color: #555;
+}
