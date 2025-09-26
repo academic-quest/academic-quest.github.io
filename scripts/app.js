@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const appContainer = document.getElementById('app-container');
     const logoutBtn = document.getElementById('logout-btn');
     const adminPanelLink = document.getElementById('admin-panel-link');
-    const navLinks = document.querySelectorAll('.nav-link[data-page]');
     const pages = document.querySelectorAll('.page');
 
     let currentUser = null;
@@ -33,21 +32,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // SPA Navigation
-    navLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const pageId = link.getAttribute('data-page');
-            
-            if (!pageId) return;
+    // SPA Navigation using Event Delegation
+    document.body.addEventListener('click', e => {
+        const link = e.target.closest('.nav-link[data-page]');
 
-            pages.forEach(page => page.classList.remove('active'));
-            navLinks.forEach(nav => nav.classList.remove('active'));
-            
-            document.getElementById(pageId).classList.add('active');
-            link.classList.add('active');
-        });
-    });
+        // If the click wasn't on a nav link, do nothing
+        if (!link) return;
+
+        e.preventDefault();
+        const pageId = link.getAttribute('data-page');
+
+        // Deactivate all pages and navigation links
+        pages.forEach(page => page.classList.remove('active'));
+        document.querySelectorAll('header .nav-link').forEach(nav => nav.classList.remove('active'));
+
+        // Activate the target page
+        document.getElementById(pageId).classList.add('active');
+
+       // Activate the corresponding link in the main header
+       const headerLink = document.querySelector(`header .nav-link[data-page="${pageId}"]`);
+       if (headerLink) {
+           headerLink.classList.add('active');
+       }
+   });
     
     // Main data fetching and app initialization
     const initializeApp = async () => {
