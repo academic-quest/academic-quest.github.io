@@ -3,37 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel</title>
-    <link rel="stylesheet" href="./styles/main.css">
+    <title>Admin Panel - RSU Progress</title>
+    <link rel="stylesheet" href="styles/main.css"> 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
 </head>
-<body class="admin-page-body">
-    <header class="main-header">
-        <h1>Admin Panel</h1>
-        <nav>
-            <a href="index.html">Student View</a>
-            <button id="logout-btn">Logout</button>
-        </nav>
+<body>
+    <div class="loading-overlay" id="loader">
+        <div class="spinner"></div>
+    </div>
+    
+    <header>
+        <div class="header-container">
+            <h1>Admin Panel</h1>
+            <nav>
+                <a href="index.html">Back to Dashboard</a>
+            </nav>
+            <button id="logout-btn" class="btn-logout">Logout</button>
+        </div>
     </header>
-    <main class="admin-container">
-        <div class="admin-card">
-            <h2>Add New Quest</h2>
-            <form id="add-quest-form">
-                <input type="text" id="quest-name" placeholder="Quest Name" required>
-                <textarea id="quest-description" placeholder="Description" required></textarea>
-                <input type="number" id="quest-points" placeholder="Points" required>
-                <input type="text" id="quest-badge" placeholder="Badge to Award (e.g., FirstQuest)">
-                <button type="submit">Add Quest</button>
+
+    <main id="admin-container" class="admin-main">
+        <div class="card">
+            <h2 id="form-title">Add New Quest</h2>
+            <form id="quest-form">
+                <input type="hidden" id="quest-id">
+                <div class="input-group">
+                    <label for="quest-name">Quest Name</label>
+                    <input type="text" id="quest-name" required>
+                </div>
+                <div class="input-group">
+                    <label for="quest-desc">Description</label>
+                    <textarea id="quest-desc" rows="3" required></textarea>
+                </div>
+                <div class="input-group">
+                    <label for="quest-points">Points</label>
+                    <input type="number" id="quest-points" required min="0">
+                </div>
+                <div class="input-group">
+                    <label for="quest-deadline">Deadline</label>
+                    <input type="date" id="quest-deadline" required>
+                </div>
+                <div class="input-group">
+                    <label for="quest-badge">Badge (Icon Name or URL)</label>
+                    <input type="text" id="quest-badge" placeholder="e.g., fa-star or image.png" required>
+                </div>
+                <div class="form-buttons">
+                    <button type="submit" class="btn" id="save-quest-btn">Save Quest</button>
+                    <button type="button" class="btn-secondary" id="cancel-edit-btn" style="display: none;">Cancel Edit</button>
+                </div>
             </form>
         </div>
-        <div class="admin-card">
-            <h2>Current Quests</h2>
-            <ul id="quest-list"></ul>
+
+        <div class="card">
+            <h2>Existing Quests</h2>
+            <div id="admin-quest-list" class="admin-quest-list">
+                </div>
         </div>
     </main>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
-    <script src="./scripts/firebase-config.js"></script>
-    <script src="./scripts/admin.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+
+    <script src="scripts/firebase-config.js"></script>
+    <script src="scripts/admin.js"></script>
 </body>
 </html>
