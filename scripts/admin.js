@@ -39,12 +39,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             snapshot.forEach(doc => {
                 const quest = { id: doc.id, ...doc.data() };
+
+                const deadlineDate = new Date(quest.deadline);
+                const formattedDeadline = deadlineDate.toLocaleString('en-US', {
+                    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
+                }); // A shorter format for the admin list
+
                 const questElement = document.createElement('div');
                 questElement.classList.add('admin-quest-item');
                 questElement.innerHTML = `
                     <div class="admin-quest-info">
                         <p class="name">${quest.name}</p>
-                        <p class="points">${quest.points} points - Due: ${quest.deadline}</p>
+                        <p class="points">${quest.points} points - Due: ${formattedDeadline}</p>
                     </div>
                     <div class="admin-quest-actions">
                         <button class="btn-edit" data-id="${quest.id}"><i class="fas fa-edit"></i></button>
