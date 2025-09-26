@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const appContainer = document.getElementById('app-container');
     const logoutBtn = document.getElementById('logout-btn');
     const adminPanelLink = document.getElementById('admin-panel-link');
-    const navLinks = document.querySelectorAll('.nav-link');
+    const navLinks = document.querySelectorAll('.nav-link[data-page]');
     const pages = document.querySelectorAll('.page');
 
     let currentUser = null;
