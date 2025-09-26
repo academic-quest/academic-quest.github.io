@@ -1,56 +1,75 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Redirect if user is already logged in
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            window.location.href = 'index.html';
-        }
+    const loginForm = document.getElementById('login-form');
+    const signupForm = document.getElementById('signup-form');
+    const loginError = document.getElementById('login-error');
+    const signupError = document.getElementById('signup-error');
+
+    const showSignupLink = document.getElementById('show-signup');
+    const showLoginLink = document.getElementById('show-login');
+    const loginContainer = document.getElementById('login-container');
+    const signupContainer = document.getElementById('signup-container');
+
+    // Switch between login and signup forms
+    showSignupLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        loginContainer.classList.add('hidden');
+        signupContainer.classList.remove('hidden');
     });
 
-    const loginView = document.getElementById('login-view');
-    const signupView = document.getElementById('signup-view');
-    
-    // View toggling
-    document.getElementById('show-signup').addEventListener('click', (e) => {
+    showLoginLink.addEventListener('click', (e) => {
         e.preventDefault();
-        loginView.style.display = 'none';
-        signupView.style.display = 'block';
-    });
-    document.getElementById('show-login').addEventListener('click', (e) => {
-        e.preventDefault();
-        loginView.style.display = 'block';
-        signupView.style.display = 'none';
+        signupContainer.classList.add('hidden');
+        loginContainer.classList.remove('hidden');
     });
 
-    // Login form
-    document.getElementById('login-form').addEventListener('submit', (e) => {
+    // Login functionality
+    loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const email = document.getElementById('login-email').value;
-        const password = document.getElementById('login-password').value;
-        auth.signInWithEmailAndPassword(email, password).catch(err => alert(err.message));
+        const email = loginForm['login-email'].value;
+        const password = loginForm['login-password'].value;
+        
+        auth.signInWithEmailAndPassword(email, password)
+            .then(userCredential => {
+                window.location.href = 'index.html';
+            })
+            .catch(error => {
+                loginError.textContent = error.message;
+            });
     });
 
-    // Signup form
-    document.getElementById('signup-form').addEventListener('submit', (e) => {
+    // Signup functionality
+    signupForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const name = document.getElementById('signup-name').value;
-        const universityId = document.getElementById('signup-id').value;
-        const email = document.getElementById('signup-email').value;
-        const password = document.getElementById('signup-password').value;
+        
+        const fullName = signupForm['signup-name'].value;
+        const universityId = signupForm['signup-uid'].value;
+        const email = signupForm['signup-email'].value;
+        const password = signupForm['signup-password'].value;
+        const universityYear = signupForm['signup-year'].value;
+        const courses = signupForm['signup-course'].value;
 
         auth.createUserWithEmailAndPassword(email, password)
-            .then(cred => {
-                // Create a user document in Firestore
-                return db.collection('users').doc(cred.user.uid).set({
-                    name: name,
-                    universityId: universityId,
-                    email: email,
+            .then(userCredential => {
+                const user = userCredential.user;
+                // Create a corresponding document in Firestore
+                return db.collection('users').doc(user.uid).set({
+                    fullName,
+                    universityId,
+                    email,
+                    universityYear: parseInt(universityYear),
+                    courses,
                     points: 0,
                     level: 1,
-                    year: "Freshman",
                     completedQuests: [],
-                    badges: []
+                    badges: [],
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
             })
-            .catch(err => alert(err.message));
+            .then(() => {
+                window.location.href = 'index.html';
+            })
+            .catch(error => {
+                signupError.textContent = error.message;
+            });
     });
 });
