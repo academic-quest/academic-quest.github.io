@@ -1,151 +1,497 @@
+/* General Body & Root Variables */
 :root {
-    --primary-color: #2c3e50;
-    --secondary-color: #3498db;
-    --background-color: #ecf0f1;
-    --surface-color: #ffffff;
-    --text-color: #34495e;
-    --green: #2ecc71;
-    --grey: #bdc3c7;
-    --border-radius: 8px;
-    --box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    --primary-color: #005A9E;
+    --secondary-color: #FFC72C;
+    --background-color: #f4f7fc;
+    --card-bg-color: #ffffff;
+    --text-color: #333;
+    --light-text-color: #777;
+    --border-color: #e0e0e0;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    --border-radius: 12px;
 }
 
 body {
     font-family: 'Poppins', sans-serif;
-    margin: 0;
     background-color: var(--background-color);
     color: var(--text-color);
+    margin: 0;
+    line-height: 1.6;
 }
 
-/* --- Header --- */
-.main-header {
-    background-color: var(--surface-color);
+/* Header & Navigation */
+header {
+    background-color: var(--card-bg-color);
+    box-shadow: var(--shadow);
     padding: 1rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.header-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    max-width: 1400px;
+    margin: 0 auto;
 }
-.main-header h1 { color: var(--primary-color); margin: 0; }
-.main-header nav a, .main-header nav button {
+
+header h1 {
+    color: var(--primary-color);
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+header nav {
+    display: flex;
+    gap: 1.5rem;
+}
+
+header .nav-link {
     text-decoration: none;
-    color: var(--secondary-color);
-    background: none;
-    border: 1px solid var(--secondary-color);
-    padding: 0.5rem 1rem;
-    border-radius: var(--border-radius);
-    cursor: pointer;
-    margin-left: 1rem;
-    transition: all 0.2s ease;
-}
-.main-header nav button:hover, .main-header nav a:hover {
-    background-color: var(--secondary-color);
-    color: white;
+    color: var(--light-text-color);
+    font-weight: 600;
+    padding: 0.5rem 0;
+    border-bottom: 2px solid transparent;
+    transition: color 0.3s, border-color 0.3s;
 }
 
+header .nav-link:hover,
+header .nav-link.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
 
-/* --- Auth Page (login.html) --- */
-.auth-page-body { display: grid; place-items: center; min-height: 100vh; }
-.auth-container {
-    width: 100%;
-    max-width: 400px;
-    padding: 2rem;
-    background: var(--surface-color);
-    box-shadow: var(--box-shadow);
-    border-radius: var(--border-radius);
-}
-.auth-container h2 { text-align: center; color: var(--primary-color); }
-.auth-container form { display: flex; flex-direction: column; gap: 1rem; }
-.auth-container input {
-    padding: 1rem;
-    border: 1px solid var(--grey);
-    border-radius: var(--border-radius);
-}
-.auth-container button {
-    padding: 1rem;
-    background-color: var(--secondary-color);
+.btn-logout {
+    background-color: var(--danger-color);
     color: white;
     border: none;
-    border-radius: var(--border-radius);
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
     cursor: pointer;
-    font-weight: bold;
+    font-weight: 600;
+    transition: background-color 0.3s;
 }
-.auth-container p { text-align: center; }
-.auth-container a { color: var(--secondary-color); font-weight: bold; cursor: pointer; }
 
+.btn-logout:hover {
+    background-color: #c82333;
+}
 
-/* --- Student Dashboard (index.html) --- */
-.app-container {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    grid-template-areas: "profile main";
-    gap: 2rem;
+/* Main Content & Pages */
+main {
     padding: 2rem;
     max-width: 1400px;
-    margin: 1rem auto;
+    margin: 0 auto;
 }
-.dash-card {
-    background: var(--surface-color);
+
+.page {
+    display: none;
+}
+
+.page.active {
+    display: block;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Card Styles */
+.card {
+    background-color: var(--card-bg-color);
     border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
+    box-shadow: var(--shadow);
     padding: 1.5rem;
+    margin-bottom: 1.5rem;
 }
-.dash-card h3 { margin-top: 0; border-bottom: 1px solid var(--background-color); padding-bottom: 0.5rem; }
+
+.card h2, .card h3 {
+    margin-top: 0;
+    color: var(--primary-color);
+}
+.card h3 i {
+    margin-right: 0.5rem;
+}
+
+
+/* Dashboard Grid Layout */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 1.5rem;
+    grid-template-areas:
+        "profile quests journey"
+        "profile leaderboard leaderboard";
+}
 
 .profile-card { grid-area: profile; text-align: center; }
-.profile-card h2 { margin-bottom: 0.5rem; }
-.profile-card p { color: #7f8c8d; margin: 0.25rem 0; }
+.current-quests-card { grid-area: quests; }
+.academic-journey-card { grid-area: journey; }
+.leaderboard-preview-card { grid-area: leaderboard; }
+
+/* Profile Card & Progress Circle */
+.progress-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
 .progress-circle {
     width: 150px;
     height: 150px;
     border-radius: 50%;
-    margin: 1.5rem auto;
     display: grid;
     place-items: center;
-    background: conic-gradient(var(--green) calc(var(--p) * 1%), var(--grey) 0);
+    background: conic-gradient(var(--secondary-color) 0deg, var(--border-color) 0deg);
+    transition: background 0.5s;
+}
+.progress-circle-inner {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+.level-text {
+    color: var(--light-text-color);
+    font-size: 0.9rem;
+}
+.level-number {
     color: var(--primary-color);
-    font-size: 1.5rem;
-    font-weight: bold;
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+.profile-card h3 {
+    margin-bottom: 0.2rem;
+}
+.profile-card p {
+    margin: 0.2rem 0;
+    color: var(--light-text-color);
+}
+.profile-card .points {
+    margin-top: 1rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--secondary-color);
+}
+.profile-card .points i {
+    color: #ffd700;
 }
 
-.main-dashboard {
-    grid-area: main;
-    display: grid;
-    gap: 1.5rem;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-}
-.quest-list, .leaderboard-list { list-style: none; padding: 0; }
-.quest-list li, .leaderboard-list li {
+/* Academic Journey Stepper */
+.stepper-container {
     display: flex;
     justify-content: space-between;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid #ecf0f1;
+    align-items: center;
+    position: relative;
+    margin-top: 2rem;
 }
-.quest-list li:last-child, .leaderboard-list li:last-child { border: none; }
+.stepper-container::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background-color: var(--border-color);
+    transform: translateY(-50%);
+    z-index: 1;
+}
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 2;
+    background: var(--background-color);
+    padding: 0 0.5rem;
+}
+.step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 4px solid var(--border-color);
+    background-color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s;
+}
+.step.active .step-circle {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+.step.completed .step-circle {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+    color: white;
+}
+.step-label {
+    font-size: 0.9rem;
+    color: var(--light-text-color);
+    font-weight: 600;
+}
+.step.active .step-label {
+    color: var(--primary-color);
+}
 
+/* Leaderboard & Quest Lists */
+.dashboard-quests-list ul, #dashboard-leaderboard-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+.quest-item, .leaderboard-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+.quest-item:last-child, .leaderboard-item:last-child {
+    border-bottom: none;
+}
+.quest-item-info span { display: block; }
+.quest-item-info .name { font-weight: 600; }
+.quest-item-info .points { font-size: 0.9rem; color: var(--secondary-color); }
+.quest-item .btn { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
 
-/* --- Admin Panel (admin.html) --- */
-.admin-page-body { background-color: #34495e; }
-.admin-container {
-    max-width: 800px;
-    margin: 2rem auto;
+.leaderboard-item .rank {
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-right: 1rem;
+}
+.leaderboard-item .name { flex: 1; }
+.leaderboard-item .points { font-weight: 600; }
+
+/* Full Quest List Page */
+.quest-list-container {
     display: grid;
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
 }
-.admin-card {
-    background: var(--surface-color);
+.full-quest-card {
+    background-color: var(--card-bg-color);
     border-radius: var(--border-radius);
-    padding: 2rem;
-    box-shadow: var(--box-shadow);
+    box-shadow: var(--shadow);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
 }
-.admin-card h2 { margin-top: 0; }
-.admin-card form { display: flex; flex-direction: column; gap: 1rem; }
-.admin-card input, .admin-card textarea, .admin-card button {
-    width: 100%;
+.full-quest-card.completed {
+    background-color: #e9f5ec;
+    opacity: 0.7;
+}
+.quest-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+.quest-header .badge {
+    font-size: 2rem;
+    color: var(--secondary-color);
+}
+.quest-title { margin: 0 0 0.5rem 0; }
+.quest-points { 
+    background-color: #fff8e1;
+    color: #f57c00;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: inline-block;
+}
+.quest-description {
+    color: var(--light-text-color);
+    flex-grow: 1;
+    margin: 1rem 0;
+}
+.quest-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+}
+.quest-deadline {
+    font-size: 0.9rem;
+    color: var(--danger-color);
+    font-weight: 600;
+}
+.btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.3s;
+}
+.btn:hover { background-color: #004a80; }
+.btn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+/* Full Leaderboard Page */
+.leaderboard-container {
+    background-color: var(--card-bg-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+}
+.leaderboard-row {
+    display: flex;
+    align-items: center;
     padding: 1rem;
-    border: 1px solid var(--grey);
-    border-radius: var(--border-radius);
-    box-sizing: border-box;
+    border-bottom: 1px solid var(--border-color);
 }
-.admin-card button { background-color: var(--primary-color); color: white; cursor: pointer; }
-#quest-list li { padding: 0.5rem; border-bottom: 1px solid var(--background-color); }
+.leaderboard-row:last-child { border-bottom: none; }
+.leaderboard-row.current-user {
+    background-color: #e7f3ff;
+    border-left: 4px solid var(--primary-color);
+    font-weight: 700;
+}
+.leaderboard-rank { width: 50px; font-size: 1.2rem; color: var(--light-text-color); }
+.leaderboard-name { flex-grow: 1; }
+.leaderboard-points { font-size: 1.1rem; color: var(--primary-color); font-weight: 600; }
+
+/* Profile Page */
+.profile-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+.profile-grid .card:nth-child(3) {
+    grid-column: span 2;
+}
+#personal-info-display p {
+    margin: 0.5rem 0;
+}
+.badge-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+.badge-item {
+    font-size: 2.5rem;
+    color: var(--secondary-color);
+    cursor: pointer;
+}
+.input-group {
+    margin-bottom: 1rem;
+}
+.input-group label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+.input-group input, .input-group select, .input-group textarea {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-family: 'Poppins', sans-serif;
+}
+.success-message {
+    color: var(--success-color);
+    margin-top: 1rem;
+    font-weight: 600;
+}
+
+/* Admin Panel Specifics */
+.admin-main {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 1.5rem;
+}
+.admin-quest-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.admin-quest-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+.admin-quest-info {
+    flex-grow: 1;
+}
+.admin-quest-info p { margin: 0; }
+.admin-quest-info .name { font-weight: 600; }
+.admin-quest-info .points { font-size: 0.9rem; color: var(--secondary-color); }
+.admin-quest-actions button {
+    margin-left: 0.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+}
+.btn-edit { color: var(--primary-color); }
+.btn-delete { color: var(--danger-color); }
+.btn-secondary {
+    background-color: var(--light-text-color);
+}
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+/* Loading Spinner */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid var(--border-color);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .dashboard-grid {
+        grid-template-columns: 300px 1fr;
+        grid-template-areas:
+            "profile quests"
+            "journey journey"
+            "leaderboard leaderboard";
+    }
+}
+@media (max-width: 768px) {
+    header nav { display: none; } /* Simplified for mobile, would need a hamburger menu */
+    .dashboard-grid, .admin-main, .profile-grid {
+        grid-template-columns: 1fr;
+        grid-template-areas: initial;
+    }
+    .profile-card, .current-quests-card, .academic-journey-card, .leaderboard-preview-card {
+        grid-area: auto;
+    }
+    main { padding: 1rem; }
+}
