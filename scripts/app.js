@@ -9,7 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentUserData = null;
     let allQuests = [];
     let allUsers = [];
-
+    const yearNames = ["First Year", "Second Year", "Third Year", "Fourth Year"]; // <-- ADD THIS LINE
+    
     // Check auth state
     auth.onAuthStateChanged(user => {
         if (user) {
