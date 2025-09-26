@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
             stepperContainer.innerHTML += `
                 <div class="${stepClass}">
                     <div class="step-circle">${i}</div>
-                    <span class="step-label">Year ${i}</span>
+                    <span class="step-label">${yearNames[i - 1]}</span>
                 </div>
             `;
         }
@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Box 1: Display Info
         document.getElementById('profile-name').textContent = currentUserData.fullName;
         document.getElementById('profile-uid').textContent = currentUserData.universityId;
-        document.getElementById('profile-year').textContent = `Year ${currentUserData.universityYear}`;
+        document.getElementById('profile-year').textContent = yearNames[currentUserData.universityYear - 1];
         document.getElementById('profile-email').textContent = currentUserData.email;
         document.getElementById('profile-courses').textContent = currentUserData.courses;
 
