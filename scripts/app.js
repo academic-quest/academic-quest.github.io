@@ -159,6 +159,10 @@ document.addEventListener('DOMContentLoaded', () => {
         allQuests.forEach(quest => {
             const isCompleted = currentUserData.completedQuests.includes(quest.id);
             const isDeadlinePassed = new Date(quest.deadline) < new Date();
+            const badgeHTML = quest.badge.startsWith('fa-')
+                ? `<i class="fas ${quest.badge}"></i>` // If it's an icon
+                : `<img src="${quest.badge}" alt="Badge">`; // If it's an image
+
             const questCard = `
                 <div class="full-quest-card ${isCompleted ? 'completed' : ''}">
                     <div class="quest-header">
@@ -166,8 +170,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             <h3 class="quest-title">${quest.name}</h3>
                             <span class="quest-points">${quest.points} Points</span>
                         </div>
-                        <div class="badge"><i class="fas ${quest.badge}"></i></div>
+                        <div class="badge">${badgeHTML}</div>
                     </div>
+           
                     <p class="quest-description">${quest.description}</p>
                     <div class="quest-footer">
                         <span class="quest-deadline">Due: ${quest.deadline}</span>
@@ -217,8 +222,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const badgeGallery = document.getElementById('profile-badges');
         badgeGallery.innerHTML = '';
         if (currentUserData.badges && currentUserData.badges.length > 0) {
-             currentUserData.badges.forEach(badgeIcon => {
-                badgeGallery.innerHTML += `<div class="badge-item" title="${badgeIcon}"><i class="fas ${badgeIcon}"></i></div>`;
+            currentUserData.badges.forEach(badge => {
+                const badgeContent = badge.startsWith('fa-')
+                    ? `<i class="fas ${badge}"></i>` // If it's an icon
+                    : `<img src="${badge}" alt="Earned Badge">`; // If it's an image
+
+                badgeGallery.innerHTML += `<div class="badge-item" title="${badge}">${badgeContent}</div>`;
             });
         } else {
             badgeGallery.innerHTML = '<p>No badges earned yet.</p>';
