@@ -495,3 +495,11 @@ main {
     }
     main { padding: 1rem; }
 }
+
+/* Styling for badge images */
+.badge img,
+.badge-item img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain; /* Prevents the image from stretching */
+}
