@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
            
                     <p class="quest-description">${quest.description}</p>
                     <div class="quest-footer">
-                        <span class="quest-deadline">Due: ${quest.deadline}</span>
+                        <span class="quest-deadline">Due: ${formattedDeadline}</span>
                         <button class="btn complete-quest-btn" data-quest-id="${quest.id}" ${isCompleted || isDeadlinePassed ? 'disabled' : ''}>
                             ${isCompleted ? 'Completed' : isDeadlinePassed ? 'Expired' : 'Complete Quest'}
                         </button>
