@@ -162,6 +162,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const badgeHTML = quest.badge.startsWith('fa-')
                 ? `<i class="fas ${quest.badge}"></i>` // If it's an icon
                 : `<img src="${quest.badge}" alt="Badge">`; // If it's an image
+            const deadlineDate = new Date(quest.deadline);
+            const formattedDeadline = deadlineDate.toLocaleString('en-US', { 
+                month: 'short', day: 'numeric', year: 'numeric', 
+                hour: 'numeric', minute: '2-digit', hour12: true 
+            }); // Example: "Oct 24, 2025, 5:30 PM"
 
             const questCard = `
                 <div class="full-quest-card ${isCompleted ? 'completed' : ''}">
