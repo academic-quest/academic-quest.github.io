@@ -254,28 +254,19 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // --- ACTION FUNCTIONS --- //
-    
     const completeQuest = async (questId) => {
     const quest = allQuests.find(q => q.id === questId);
     if (!quest) return;
 
     loader.style.display = 'flex';
     try {
-        // Calculate next points & level locally based on currentUserData
         const currentPoints = Number(currentUserData.points || 0);
-        const currentLevel  = Number(currentUserData.level || 1);
-        const added         = Number(quest.points || 0);
-
+        const added = Number(quest.points || 0);
         const newPoints = currentPoints + added;
 
-        
-        // Correct level-up logic (each 100 pts = +1 level)
-        let newLevel = currentLevel;
-        while (newPoints >= newLevel * 100 + 100) {
-            newLevel++;
-    }
+        // ✅ Level formula: every 100 pts → +1 level
+        const newLevel = Math.floor(newPoints / 100) + 1;
 
-        // Update user: increment points and set (possibly higher) level
         await db.collection('users').doc(currentUser.uid).update({
             points: firebase.firestore.FieldValue.increment(added),
             level: newLevel,
@@ -283,8 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
             badges: firebase.firestore.FieldValue.arrayUnion(quest.badge)
         });
 
-        // Re-fetch and re-render
-        await initializeApp();
+        await initializeApp(); // refresh UI
     } catch (error) {
         console.error("Error completing quest:", error);
         alert("Failed to complete quest.");
@@ -292,6 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loader.style.display = 'none';
     }
 };
+    
     
     // Profile Update Form Logic
     const updateProfileForm = document.getElementById('update-profile-form');
