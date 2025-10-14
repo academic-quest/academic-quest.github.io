@@ -260,15 +260,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loader.style.display = 'flex';
     try {
-        const currentPoints = Number(currentUserData.points || 0);
+        // Fetch latest user points from Firestore (ensure fresh data)
+        const userDoc = await db.collection('users').doc(currentUser.uid).get();
+        const currentPoints = Number(userDoc.data().points || 0);
         const added = Number(quest.points || 0);
         const newPoints = currentPoints + added;
 
-        // ✅ Level formula: every 100 pts → +1 level
+        // ✅ Correct: every 100 points = +1 level
         const newLevel = Math.floor(newPoints / 100) + 1;
 
+        // Update points and level together
         await db.collection('users').doc(currentUser.uid).update({
-            points: firebase.firestore.FieldValue.increment(added),
+            points: newPoints,
             level: newLevel,
             completedQuests: firebase.firestore.FieldValue.arrayUnion(quest.id),
             badges: firebase.firestore.FieldValue.arrayUnion(quest.badge)
