@@ -268,11 +268,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const newPoints = currentPoints + added;
 
-        // Level-up rule: every time points reach/exceed (level * 100), level increases by 1
-        let newLevel = currentLevel;
-        while (newPoints >= newLevel * 100) {
-            newLevel += 1;
-        }
+        // ✅ Correct level rule: every full 100 pts = +1 level
+        const newLevel = Math.floor(newPoints / 100) + 1;
 
         // Update user: increment points and set (possibly higher) level
         await db.collection('users').doc(currentUser.uid).update({
