@@ -256,24 +256,41 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ACTION FUNCTIONS --- //
     
     const completeQuest = async (questId) => {
-        const quest = allQuests.find(q => q.id === questId);
-        if (!quest) return;
-        
-        loader.style.display = 'flex';
-        try {
-            await db.collection('users').doc(currentUser.uid).update({
-                points: firebase.firestore.FieldValue.increment(quest.points),
-                completedQuests: firebase.firestore.FieldValue.arrayUnion(quest.id),
-                badges: firebase.firestore.FieldValue.arrayUnion(quest.badge)
-            });
-            // Re-fetch data and re-render
-            await initializeApp();
-        } catch (error) {
-            console.error("Error completing quest:", error);
-        } finally {
-            loader.style.display = 'none';
+    const quest = allQuests.find(q => q.id === questId);
+    if (!quest) return;
+
+    loader.style.display = 'flex';
+    try {
+        // Calculate next points & level locally based on currentUserData
+        const currentPoints = Number(currentUserData.points || 0);
+        const currentLevel  = Number(currentUserData.level || 1);
+        const added         = Number(quest.points || 0);
+
+        const newPoints = currentPoints + added;
+
+        // Level-up rule: every time points reach/exceed (level * 100), level increases by 1
+        let newLevel = currentLevel;
+        while (newPoints >= newLevel * 100) {
+            newLevel += 1;
         }
-    };
+
+        // Update user: increment points and set (possibly higher) level
+        await db.collection('users').doc(currentUser.uid).update({
+            points: firebase.firestore.FieldValue.increment(added),
+            level: newLevel,
+            completedQuests: firebase.firestore.FieldValue.arrayUnion(quest.id),
+            badges: firebase.firestore.FieldValue.arrayUnion(quest.badge)
+        });
+
+        // Re-fetch and re-render
+        await initializeApp();
+    } catch (error) {
+        console.error("Error completing quest:", error);
+        alert("Failed to complete quest.");
+    } finally {
+        loader.style.display = 'none';
+    }
+};
     
     // Profile Update Form Logic
     const updateProfileForm = document.getElementById('update-profile-form');
