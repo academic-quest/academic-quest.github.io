@@ -503,3 +503,9 @@ main {
     height: 48px;
     object-fit: contain; /* Prevents the image from stretching */
 }
+
+.change-email { margin-top: 12px; }
+.change-email .row { margin: 8px 0; }
+.change-email input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; }
+.change-email button { margin-top: 8px; padding: 8px 12px; border-radius: 8px; cursor: pointer; }
+.muted { margin-top: 8px; font-size: .95rem; color: #333; }
