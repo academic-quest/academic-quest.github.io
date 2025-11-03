@@ -44,6 +44,48 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 
+    // ===== Forgot password flow =====
+if (forgotLink) {
+  forgotLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    resetMsg.textContent = "";
+    resetEmail.value = "";
+    resetPanel.style.display = 'block';
+    try { resetPanel.scrollIntoView({behavior: 'smooth', block: 'center'}); } catch(_) {}
+  });
+}
+
+if (resetClose) {
+  resetClose.addEventListener('click', () => {
+    resetPanel.style.display = 'none';
+  });
+}
+
+if (resetForm) {
+  resetForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    resetMsg.textContent = "Sending...";
+    const email = resetEmail.value.trim();
+
+    // You are using Firebase compat (v9 compat with v8-style API)
+    firebase.auth().sendPasswordResetEmail(email)
+      .then(() => {
+        resetMsg.textContent = "If an account exists for that email, a reset link has been sent.";
+      })
+      .catch((err) => {
+        const code = err?.code || "";
+        if (code.includes("auth/invalid-email")) {
+          resetMsg.textContent = "Please enter a valid email address.";
+        } else if (code.includes("auth/user-not-found")) {
+          // Keep it generic to avoid leaking whether account exists
+          resetMsg.textContent = "If an account exists for that email, a reset link has been sent.";
+        } else {
+          resetMsg.textContent = "Couldn't send reset link. Please try again.";
+        }
+      });
+  });
+}
+    
     // Signup functionality
     signupForm.addEventListener('submit', (e) => {
         e.preventDefault();
