@@ -9,6 +9,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginContainer = document.getElementById('login-container');
     const signupContainer = document.getElementById('signup-container');
 
+    const forgotLink = document.getElementById('forgot-link');
+    const resetPanel = document.getElementById('reset-panel');
+    const resetForm = document.getElementById('reset-form');
+    const resetEmail = document.getElementById('reset-email');
+    const resetMsg = document.getElementById('reset-msg');
+    const resetClose = document.getElementById('reset-close');
+
     // Switch between login and signup forms
     showSignupLink.addEventListener('click', (e) => {
         e.preventDefault();
