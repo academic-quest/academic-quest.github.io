@@ -68,22 +68,22 @@ if (changeEmailForm) {
       if (changeEmailMsg) changeEmailMsg.textContent = "Email updated successfully. (No verification email sent.)";
 
       changeEmailForm.reset();
-    } catch (err) {
-      const code = err && err.code ? String(err.code) : "";
-      console.error("Change email error:", err);
-
-      if (code.includes("auth/invalid-email")) {
-        if (changeEmailMsg) changeEmailMsg.textContent = "Please enter a valid email address.";
-      } else if (code.includes("auth/email-already-in-use")) {
-        if (changeEmailMsg) changeEmailMsg.textContent = "That email is already in use by another account.";
-      } else if (code.includes("auth/wrong-password")) {
-        if (changeEmailMsg) changeEmailMsg.textContent = "Incorrect current password.";
-      } else if (code.includes("auth/requires-recent-login") || code.includes("auth/too-many-requests")) {
-        if (changeEmailMsg) changeEmailMsg.textContent = "Please sign out and sign in again, then try again.";
-      } else {
-        if (changeEmailMsg) changeEmailMsg.textContent = "Could not update email. Please try again.";
-      }
-    }
+} catch (err) {
+  const code = err && err.code ? String(err.code) : "";
+  console.error("Change email error:", err);
+  if (code.includes("auth/invalid-email")) {
+    changeEmailMsg.textContent = "Please enter a valid email address.";
+  } else if (code.includes("auth/email-already-in-use")) {
+    changeEmailMsg.textContent = "That email is already in use by another account.";
+  } else if (code.includes("auth/wrong-password")) {
+    changeEmailMsg.textContent = "Incorrect current password.";
+  } else if (code.includes("auth/requires-recent-login") || code.includes("auth/too-many-requests")) {
+    changeEmailMsg.textContent = "Please sign out and sign in again, then try again.";
+  } else {
+    // 👇 show the real code/message to debug quickly
+    changeEmailMsg.textContent = `Could not update email: ${code || err.message || 'Unknown error'}`;
+  }
+}
   });
 }
 
