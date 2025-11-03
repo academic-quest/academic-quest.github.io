@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let allUsers = [];
     const yearNames = ["First Year", "Second Year", "Third Year", "Fourth Year"];// <-- ADD THIS LINE
 
-// ===== Change Email (no verification email) =====
+// ===== Change Email (robust: avoids op-not-allowed) =====
 const changeEmailForm = document.getElementById('change-email-form');
 const newEmailInput = document.getElementById('new-email');
 const currentPasswordInput = document.getElementById('current-password');
@@ -19,19 +19,19 @@ const changeEmailMsg = document.getElementById('change-email-msg');
 
 function _getCurrentUser() { return firebase.auth().currentUser; }
 
-async function _reauthenticateWithPassword(password) {
-  const user = _getCurrentUser();
-  if (!user || !user.email) throw new Error("Not signed in");
-  const cred = firebase.auth.EmailAuthProvider.credential(user.email, password);
-  await user.reauthenticateWithCredential(cred);
+// Check if the login is “fresh enough” (5 minutes)
+function _hasFreshLogin(user) {
+  try {
+    const last = new Date(user.metadata.lastSignInTime).getTime();
+    return (Date.now() - last) < (5 * 60 * 1000);
+  } catch {
+    return false;
+  }
 }
 
-async function _updateFirestoreEmail(uid, email) {
-  try {
-    await firebase.firestore().collection('users').doc(uid).update({ email });
-  } catch (e) {
-    console.warn("Firestore email update skipped/failed:", e);
-  }
+async function _reauthWithPassword(user, password) {
+  const cred = firebase.auth.EmailAuthProvider.credential(user.email, password);
+  await user.reauthenticateWithCredential(cred);
 }
 
 if (changeEmailForm) {
@@ -40,39 +40,84 @@ if (changeEmailForm) {
     changeEmailMsg.textContent = "Updating email...";
 
     const user = _getCurrentUser();
-    if (!user) { changeEmailMsg.textContent = "You must be signed in to change email."; return; }
-
     const newEmail = (newEmailInput?.value || "").trim();
     const password = (currentPasswordInput?.value || "").trim();
+
+    if (!user) { changeEmailMsg.textContent = "You must be signed in to change email."; return; }
     if (!newEmail || !password) {
       changeEmailMsg.textContent = "Please enter both new email and your current password.";
       return;
     }
 
+    // 0) Quick diagnostics (open DevTools Console to see this):
+    console.log('providers:', user.providerData);
+
+    // 1) If the login is *fresh*, try updateEmail *first* (no re-auth).
+    //    This often works and avoids re-auth errors.
+    if (_hasFreshLogin(user)) {
+      try {
+        await user.updateEmail(newEmail);
+        try { await firebase.firestore().collection('users').doc(user.uid).update({ email: newEmail }); } catch (fsErr) {}
+        changeEmailMsg.textContent = "Email updated successfully. (No verification email sent.)";
+        changeEmailForm.reset();
+        return;
+      } catch (err1) {
+        const c = err1?.code || "";
+        console.error('updateEmail (fresh) failed:', err1);
+        if (c === 'auth/invalid-email')  { changeEmailMsg.textContent = "Please enter a valid email address."; return; }
+        if (c === 'auth/email-already-in-use') { changeEmailMsg.textContent = "That email is already in use by another account."; return; }
+        if (c !== 'auth/requires-recent-login') {
+          changeEmailMsg.textContent = `Could not update email: ${c || err1.message}`;
+          return;
+        }
+        // If it specifically needs recent login, we’ll attempt re-auth next.
+      }
+    }
+
+    // 2) Try re-auth with password.
     try {
-      await _reauthenticateWithPassword(password);
+      await _reauthWithPassword(user, password);
+    } catch (reauthErr) {
+      const rc = reauthErr?.code || "";
+      console.error('Reauth failed:', reauthErr);
+
+      if (rc === 'auth/wrong-password') {
+        changeEmailMsg.textContent = "Incorrect current password.";
+        return;
+      }
+      if (rc === 'auth/user-mismatch' || rc === 'auth/invalid-credential') {
+        changeEmailMsg.textContent = "This account isn’t a password login. Use the same method you used to sign in.";
+        return;
+      }
+      if (rc === 'auth/too-many-requests') {
+        changeEmailMsg.textContent = "Too many attempts. Please wait and try again.";
+        return;
+      }
+      if (rc === 'auth/operation-not-allowed') {
+        // Final, reliable fix for this case: fresh login.
+        changeEmailMsg.textContent = "Password re-auth is blocked. Please sign out and sign in again, then try Update Email.";
+        return;
+      }
+      changeEmailMsg.textContent = `Could not re-authenticate: ${rc || reauthErr.message}`;
+      return;
+    }
+
+    // 3) Re-auth succeeded → update email now.
+    try {
       await user.updateEmail(newEmail);
-      await _updateFirestoreEmail(user.uid, newEmail); // optional
+      try { await firebase.firestore().collection('users').doc(user.uid).update({ email: newEmail }); } catch (fsErr) {}
       changeEmailMsg.textContent = "Email updated successfully. (No verification email sent.)";
       changeEmailForm.reset();
-    } catch (err) {
-      const code = err?.code || "";
-      console.error("Change email error:", err);
-      if (code.includes("auth/invalid-email")) {
-        changeEmailMsg.textContent = "Please enter a valid email address.";
-      } else if (code.includes("auth/email-already-in-use")) {
-        changeEmailMsg.textContent = "That email is already in use by another account.";
-      } else if (code.includes("auth/wrong-password")) {
-        changeEmailMsg.textContent = "Incorrect current password.";
-      } else if (code.includes("auth/requires-recent-login") || code.includes("auth/too-many-requests")) {
-        changeEmailMsg.textContent = "Please sign out and sign in again, then try again.";
-      } else {
-        changeEmailMsg.textContent = `Could not update email: ${code || err.message || 'Unknown error'}`;
-      }
+    } catch (updErr) {
+      const uc = updErr?.code || "";
+      console.error('updateEmail (after reauth) failed:', updErr);
+      if (uc === 'auth/invalid-email')            { changeEmailMsg.textContent = "Please enter a valid email address."; return; }
+      if (uc === 'auth/email-already-in-use')     { changeEmailMsg.textContent = "That email is already in use by another account."; return; }
+      if (uc === 'auth/requires-recent-login')    { changeEmailMsg.textContent = "Please sign out and sign in again, then try to change your email."; return; }
+      changeEmailMsg.textContent = `Could not update email: ${uc || updErr.message}`;
     }
   });
 }
-
 
     
     // Check auth state
