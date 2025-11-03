@@ -11,15 +11,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let allUsers = [];
     const yearNames = ["First Year", "Second Year", "Third Year", "Fourth Year"];// <-- ADD THIS LINE
 
-    // ===== Change Email (no verification email) =====
+// ===== Change Email (no verification email) =====
 const changeEmailForm = document.getElementById('change-email-form');
 const newEmailInput = document.getElementById('new-email');
 const currentPasswordInput = document.getElementById('current-password');
 const changeEmailMsg = document.getElementById('change-email-msg');
 
-function _getCurrentUser() {
-  return firebase.auth().currentUser;
-}
+function _getCurrentUser() { return firebase.auth().currentUser; }
 
 async function _reauthenticateWithPassword(password) {
   const user = _getCurrentUser();
@@ -39,51 +37,39 @@ async function _updateFirestoreEmail(uid, email) {
 if (changeEmailForm) {
   changeEmailForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (changeEmailMsg) changeEmailMsg.textContent = "Updating email...";
+    changeEmailMsg.textContent = "Updating email...";
 
     const user = _getCurrentUser();
-    if (!user) {
-      if (changeEmailMsg) changeEmailMsg.textContent = "You must be signed in to change email.";
-      return;
-    }
+    if (!user) { changeEmailMsg.textContent = "You must be signed in to change email."; return; }
 
-    const newEmail = (newEmailInput && newEmailInput.value || "").trim();
-    const password = (currentPasswordInput && currentPasswordInput.value || "").trim();
+    const newEmail = (newEmailInput?.value || "").trim();
+    const password = (currentPasswordInput?.value || "").trim();
     if (!newEmail || !password) {
-      if (changeEmailMsg) changeEmailMsg.textContent = "Please enter both new email and your current password.";
+      changeEmailMsg.textContent = "Please enter both new email and your current password.";
       return;
     }
 
     try {
-      // 1) Re-auth
       await _reauthenticateWithPassword(password);
-
-      // 2) Update Auth email
       await user.updateEmail(newEmail);
-
-      // 3) Update Firestore copy (optional but good)
-      await _updateFirestoreEmail(user.uid, newEmail);
-
-      // 4) Done
-      if (changeEmailMsg) changeEmailMsg.textContent = "Email updated successfully. (No verification email sent.)";
-
+      await _updateFirestoreEmail(user.uid, newEmail); // optional
+      changeEmailMsg.textContent = "Email updated successfully. (No verification email sent.)";
       changeEmailForm.reset();
-} catch (err) {
-  const code = err && err.code ? String(err.code) : "";
-  console.error("Change email error:", err);
-  if (code.includes("auth/invalid-email")) {
-    changeEmailMsg.textContent = "Please enter a valid email address.";
-  } else if (code.includes("auth/email-already-in-use")) {
-    changeEmailMsg.textContent = "That email is already in use by another account.";
-  } else if (code.includes("auth/wrong-password")) {
-    changeEmailMsg.textContent = "Incorrect current password.";
-  } else if (code.includes("auth/requires-recent-login") || code.includes("auth/too-many-requests")) {
-    changeEmailMsg.textContent = "Please sign out and sign in again, then try again.";
-  } else {
-    // 👇 show the real code/message to debug quickly
-    changeEmailMsg.textContent = `Could not update email: ${code || err.message || 'Unknown error'}`;
-  }
-}
+    } catch (err) {
+      const code = err?.code || "";
+      console.error("Change email error:", err);
+      if (code.includes("auth/invalid-email")) {
+        changeEmailMsg.textContent = "Please enter a valid email address.";
+      } else if (code.includes("auth/email-already-in-use")) {
+        changeEmailMsg.textContent = "That email is already in use by another account.";
+      } else if (code.includes("auth/wrong-password")) {
+        changeEmailMsg.textContent = "Incorrect current password.";
+      } else if (code.includes("auth/requires-recent-login") || code.includes("auth/too-many-requests")) {
+        changeEmailMsg.textContent = "Please sign out and sign in again, then try again.";
+      } else {
+        changeEmailMsg.textContent = `Could not update email: ${code || err.message || 'Unknown error'}`;
+      }
+    }
   });
 }
 
