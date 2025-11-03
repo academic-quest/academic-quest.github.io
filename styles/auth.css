@@ -114,3 +114,20 @@ form p {
     min-height: 1.2em;
 }
 
+/* Forgot password + reset panel */
+.forgot-wrap { margin-top: 8px; text-align: right; }
+.forgot-wrap a { font-size: 0.9rem; text-decoration: underline; cursor: pointer; }
+
+.reset-panel {
+  max-width: 480px;
+  margin: 16px auto;
+  padding: 16px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+}
+.reset-panel h3 { margin: 0 0 8px 0; }
+.reset-panel form { display: flex; gap: 8px; margin-top: 8px; }
+.reset-panel input { flex: 1; }
+.reset-msg { margin-top: 8px; font-size: 0.95rem; }
