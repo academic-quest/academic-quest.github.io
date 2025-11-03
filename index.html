@@ -128,6 +128,25 @@
                 </div>
             </div>
         </section>
+
+        <!-- Change Email UI -->
+        <section id="account-settings" class="card">
+          <h2>Account Settings</h2>
+          <div class="change-email">
+            <h3>Change Email</h3>
+            <form id="change-email-form">
+              <div class="row">
+                <input type="email" id="new-email" placeholder="New email" required />
+              </div>
+              <div class="row">
+                <input type="password" id="current-password" placeholder="Current password (for security)" required />
+              </div>
+              <button type="submit" id="change-email-btn">Update Email</button>
+           </form>
+           <p id="change-email-msg" class="muted"></p>
+         </div>
+       </section>
+        
     </main>
 
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
